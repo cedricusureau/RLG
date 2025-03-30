@@ -51,36 +51,5 @@ def check_and_document_architecture():
 
         f.write("```\n\n")
 
-        # Documenter les problèmes d'import potentiels
-        f.write("## Analyse des imports\n\n")
-        python_files = []
-        for dirpath, _, filenames in os.walk(root_dir):
-            for filename in filenames:
-                if filename.endswith('.py'):
-                    python_files.append(os.path.join(dirpath, filename))
-
-        import_issues = []
-        for py_file in python_files:
-            with open(py_file, 'r', encoding='utf-8') as file:
-                try:
-                    content = file.read()
-                    rel_path = os.path.relpath(py_file, root_dir)
-                    lines = content.split('\n')
-                    for i, line in enumerate(lines):
-                        if line.strip().startswith('from src.') or line.strip().startswith('import src.'):
-                            import_issues.append((rel_path, i + 1, line.strip()))
-                except:
-                    pass
-
-        if import_issues:
-            f.write("### Problèmes d'import potentiels\n\n")
-            for file, line, import_stmt in import_issues:
-                f.write(f"- Dans `{file}` (ligne {line}): `{import_stmt}`\n")
-                # Suggestion de correction
-                corrected = import_stmt.replace('src.', '')
-                f.write(f"  - Suggestion: `{corrected}`\n")
-        else:
-            f.write("Aucun problème d'import détecté.\n")
-
     print(f"Architecture documentée dans {architecture_file}")
     return architecture_file

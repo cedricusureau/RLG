@@ -6,7 +6,7 @@ import multiprocessing
 import time
 import json
 from datetime import datetime
-from neural_battler.src.ai.training.train import train_immune_cell
+from ...ai.training.train import train_immune_cell
 
 
 def run_batch_training(config):

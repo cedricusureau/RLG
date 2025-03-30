@@ -1,14 +1,19 @@
 # neural_battler/train_headless.py
-import argparse
-import os
-from src.ai.training import train_immune_cell, evaluate_model, run_batch_training
-from src.helper.architecture import check_and_document_architecture
-
+import sys
 import os
 from pathlib import Path
 
+# Ajouter le répertoire racine au PYTHONPATH
+root_dir = Path(__file__).parent
+sys.path.insert(0, str(root_dir))
+
 # Changer le répertoire de travail à la racine du projet
-os.chdir(Path(__file__).parent)
+os.chdir(root_dir)
+
+# Maintenant que le PYTHONPATH est configuré, importer les modules
+import argparse
+from src.ai.training import train_immune_cell, evaluate_model, run_batch_training
+from src.helper.architecture import check_and_document_architecture
 
 def main():
     # Vérifier et documenter l'architecture du projet
@@ -71,7 +76,7 @@ def main():
             "base_model_path": args.base_model
         }
 
-        from neural_battler.src.ai.training.batch_training import run_batch_training, run_parallel_training
+        from ai.training.batch_training import run_batch_training, run_parallel_training
 
         if args.parallel > 1:
             print(f"Exécution en parallèle avec {args.parallel} processus")

@@ -5,9 +5,8 @@ import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
-from neural_battler.src.ai.training.environment import TrainingEnvironment
-from neural_battler.src.ai.inference.immune_cell_controller import ImmuneCellController
-
+from .environment import TrainingEnvironment
+from ..inference.immune_cell_controller import ImmuneCellController
 
 def evaluate_model(model_path, num_episodes=50, max_steps=1000, render=False):
     """

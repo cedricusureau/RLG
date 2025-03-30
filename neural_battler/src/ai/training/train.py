@@ -7,6 +7,7 @@ from tqdm import tqdm
 import argparse
 from ..models import ImmuneCellAgent
 from .environment import TrainingEnvironment  # Import direct depuis le module
+import datetime
 
 def train_immune_cell(episodes=1000, batch_size=64, save_interval=100, model_path=None):
     """
@@ -16,6 +17,9 @@ def train_immune_cell(episodes=1000, batch_size=64, save_interval=100, model_pat
     state_size = 23
     # Taille de l'action: 8 directions + immobile = 9
     action_size = 9
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_id = f"run_{timestamp}"
 
     # Créer l'environnement et l'agent
     env = TrainingEnvironment()
@@ -79,7 +83,7 @@ def train_immune_cell(episodes=1000, batch_size=64, save_interval=100, model_pat
         if (episode + 1) % save_interval == 0:
             save_dir = os.path.join("data", "neural_networks")
             os.makedirs(save_dir, exist_ok=True)
-            save_path = os.path.join(save_dir, f"immune_cell_model_ep{episode + 1}.pt")
+            save_path = os.path.join(save_dir, f"immune_cell_model_{run_id}_ep{episode + 1}.pt")
             agent.save(save_path)
             print(f"\nModèle sauvegardé: {save_path}")
 
@@ -87,7 +91,7 @@ def train_immune_cell(episodes=1000, batch_size=64, save_interval=100, model_pat
             print(f"Épisode {episode + 1}/{episodes}, Récompense moyenne: {np.mean(episode_rewards[-100:]):.2f}")
 
     # Sauvegarder le modèle final
-    final_path = os.path.join("data", "neural_networks", "immune_cell_model_final.pt")
+    final_path = os.path.join("data", "neural_networks", f"immune_cell_model_{run_id}_final.pt")
     agent.save(final_path)
     print(f"Modèle final sauvegardé: {final_path}")
 
@@ -115,7 +119,7 @@ def train_immune_cell(episodes=1000, batch_size=64, save_interval=100, model_pat
     # Sauvegarder le graphique
     plt.tight_layout()
     os.makedirs("data/stats", exist_ok=True)
-    plt.savefig("data/stats/training_performance.png")
+    plt.savefig(f"data/stats/training_performance_{run_id}.png")
     plt.close()
 
     return agent, final_path

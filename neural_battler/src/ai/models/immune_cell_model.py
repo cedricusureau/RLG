@@ -8,8 +8,8 @@ import numpy as np
 class ImmuneCellNetwork(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super(ImmuneCellNetwork, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size*2)
-        self.fc2 = nn.Linear(hidden_size*2, hidden_size)
+        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.fc2 = nn.Linear(hidden_size, hidden_size)
         self.fc3 = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):

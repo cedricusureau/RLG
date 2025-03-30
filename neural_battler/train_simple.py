@@ -8,7 +8,7 @@ root_dir = Path(__file__).parent
 sys.path.insert(0, str(root_dir))
 
 # Import direct de la fonction d'entraînement
-from neural_battler.src.ai.training.train import train_immune_cell
+from ai.training.train import train_immune_cell
 
 if __name__ == "__main__":
     import argparse

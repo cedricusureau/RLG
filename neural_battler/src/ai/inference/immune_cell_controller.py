@@ -29,9 +29,18 @@ class ImmuneCellController:
         """
         Met à jour le comportement du lymphocyte en fonction du modèle
         """
-        action = self.get_action(immune_cell, pathogens, tissue.width, tissue.height)
+        state = self._get_state(immune_cell, pathogens, tissue.width, tissue.height)
+        with torch.no_grad():
+            q_values = self.agent.policy_network(state)
+            action_idx = torch.argmax(q_values).item()
+
+        # Séparation des actions de mouvement et de capacité spéciale
+        # Action 0-8: mouvement, Action 9: utiliser capacité spéciale + ne pas bouger
+        use_special = action_idx == 9
+        movement_idx = 8 if use_special else action_idx  # Si spécial, ne pas bouger (action 8)
+
         # Utiliser la vitesse par défaut
-        dx, dy = self.agent.action_to_movement(action, self.default_speed)
+        dx, dy = self.agent.action_to_movement(movement_idx, self.default_speed)
 
         # Mettre à jour la position du lymphocyte
         new_x = immune_cell.x + dx
@@ -42,4 +51,4 @@ class ImmuneCellController:
             immune_cell.x = new_x
             immune_cell.y = new_y
 
-        # Le reste du comportement (attaque, etc.) reste géré par la classe ImmuneCell
+        return {"use_special": use_special}

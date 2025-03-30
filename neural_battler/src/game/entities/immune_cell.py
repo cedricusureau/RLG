@@ -21,12 +21,15 @@ class ImmuneCell:
         self.color = (0, 0, 255)  # Bleu pour les cellules immunitaires
         self.projectiles = []  # Liste pour stocker les projectiles
 
+        # Système de capacité spéciale avec cooldown
+        self.special_cooldown = 0
+        self.special_cooldown_max = 180  # 3 secondes à 60 FPS
+        self.special_ready = True  # Indique si la capacité est prête
+
         # Attributs liés à l'IA
         self.controller = None
         self.ai_controlled = False
         self.target = None
-        self.mana = 0
-        self.max_mana = 100
         self.speed = 1.0
 
         # Charger le contrôleur IA si un modèle est spécifié
@@ -40,8 +43,14 @@ class ImmuneCell:
         Sinon, utilise le comportement par défaut
         """
         if self.ai_controlled and self.controller:
-            # Laisser le contrôleur IA gérer le mouvement
-            self.controller.update(self, game_state.pathogens, game_state)
+            # Laisser le contrôleur IA gérer le mouvement et les actions
+            actions = self.controller.update(self, game_state.pathogens, game_state)
+
+            # Si l'IA a choisi d'utiliser la capacité spéciale
+            if self.special_ready and actions.get('use_special', False):
+                self.use_special_ability(game_state)
+                self.special_ready = False
+                self.special_cooldown = self.special_cooldown_max
 
             # Récupération des pathogens proches
             pathogens = game_state.get_nearby_pathogens(self.x, self.y, self.attack_range)
@@ -63,13 +72,6 @@ class ImmuneCell:
                 if closest_pathogen:
                     self.shoot_at(closest_pathogen)
                     self.attack_cooldown = self.attack_cooldown_max
-                    # Chaque attaque de base génère du mana (si attribut mana existe)
-                    if hasattr(self, 'mana') and hasattr(self, 'max_mana'):
-                        self.mana = min(self.max_mana, self.mana + 20)
-
-            # Utilisation de la capacité spéciale si mana plein
-            if hasattr(self, 'mana') and hasattr(self, 'max_mana') and self.mana >= self.max_mana:
-                self.use_special_ability(game_state)
         else:
             # Comportement par défaut pour le mode manuel
             # Récupération des pathogens à portée
@@ -88,6 +90,13 @@ class ImmuneCell:
 
         # Mise à jour des projectiles (commun aux deux modes)
         self.update_projectiles(game_state)
+
+        # Gérer le cooldown de la capacité spéciale
+        if not self.special_ready:
+            self.special_cooldown -= 1
+            if self.special_cooldown <= 0:
+                self.special_ready = True
+                self.special_cooldown = 0
 
     def set_ai_model(self, model_path):
         """
@@ -111,9 +120,8 @@ class ImmuneCell:
 
     def use_special_ability(self, game_state):
         """
-        Utilise une capacité spéciale quand le mana est plein
+        Utilise une capacité spéciale (attaque en zone)
         """
-        # Exemple simple: attaque en zone
         radius = 100
         damage = 30
 
@@ -125,9 +133,6 @@ class ImmuneCell:
 
             if distance <= radius:
                 pathogen.take_damage(damage)
-
-        # Réinitialiser le mana
-        self.mana = 0
 
         # Ajouter un effet visuel (si supporté par game_state)
         if hasattr(game_state, 'add_effect'):
@@ -230,8 +235,27 @@ class ImmuneCell:
         pygame.draw.rect(screen, (0, 255, 0),
                          (health_x, health_y, health_width, health_height))
 
+        # Afficher l'état de la capacité spéciale
+        special_color = (255, 215, 0) if self.special_ready else (
+        150, 150, 0)  # Or pour prêt, jaune foncé pour en cooldown
+        special_width = self.radius * 2 if self.special_ready else int(
+            self.radius * 2 * (1 - self.special_cooldown / self.special_cooldown_max))
+        pygame.draw.rect(screen, (100, 100, 100),
+                         (health_x, health_y - 7, self.radius * 2, health_height))
+        pygame.draw.rect(screen, special_color,
+                         (health_x, health_y - 7, special_width, health_height))
+
         # Dessine les projectiles
         for projectile in self.projectiles:
             pygame.draw.circle(screen, projectile['color'],
                                (int(projectile['x'] + offset_x), int(projectile['y'] + offset_y)),
                                projectile['radius'])
+
+        if hasattr(self, 'special_ready'):
+            special_color = (0, 255, 0) if self.special_ready else (100, 100, 100)
+            special_width = self.radius * 2 if self.special_ready else int(
+                self.radius * 2 * (1 - self.special_cooldown / self.special_cooldown_max))
+            pygame.draw.rect(screen, (100, 100, 100),
+                             (health_x, health_y - 7, self.radius * 2, health_height))
+            pygame.draw.rect(screen, special_color,
+                             (health_x, health_y - 7, special_width, health_height))

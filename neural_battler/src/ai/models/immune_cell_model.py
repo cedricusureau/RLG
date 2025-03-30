@@ -19,7 +19,14 @@ class ImmuneCellNetwork(nn.Module):
 
 
 class ImmuneCellAgent:
-    def __init__(self, state_size, action_size, hidden_size=64, learning_rate=0.001):
+    def __init__(self, state_size, action_size=10, hidden_size=64, learning_rate=0.001):
+        """
+        Initialiser avec 10 actions:
+        0-7: 8 directions de mouvement
+        8: ne pas bouger
+        9: utiliser capacité spéciale (sans bouger)
+        """
+
         self.state_size = state_size
         self.action_size = action_size
 
@@ -73,8 +80,12 @@ class ImmuneCellAgent:
         # Santé relative du lymphocyte
         health_info = [immune_cell.health / immune_cell.max_health]
 
+        # Santé relative du lymphocyte et état de la capacité spéciale
+        health_info = [immune_cell.health / immune_cell.max_health]
+        special_ready = [1.0 if immune_cell.special_ready else 0.0]
+
         # Combinaison de toutes les informations
-        state = cell_pos + pathogen_info + health_info
+        state = cell_pos + pathogen_info + health_info + special_ready
         return torch.FloatTensor(state)
 
     def select_action(self, state, epsilon=0.1):

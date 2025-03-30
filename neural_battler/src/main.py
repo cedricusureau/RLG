@@ -150,6 +150,12 @@ def main(model_path=None):
                 if keys[pygame.K_RIGHT]:
                     move_x += lt.speed if hasattr(lt, 'speed') else 1.0
 
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE and lt.special_ready:
+                        lt.use_special_ability(tissue)
+                        lt.special_ready = False
+                        lt.special_cooldown = lt.special_cooldown_max
+
                 # Appliquer le mouvement
                 new_x = lt.x + move_x
                 new_y = lt.y + move_y

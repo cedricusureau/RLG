@@ -104,6 +104,27 @@ class TrainingEnvironment:
             for _ in range(random.randint(3, 5)):
                 self._spawn_random_pathogen()
 
+        # Vérifier si l'action choisie est d'utiliser l'attaque spéciale (action 9)
+        used_special = (action == 9)
+
+        # Si l'attaque spéciale est utilisée et qu'elle est disponible
+        if used_special and self.immune_cell.special_ready:
+            # Utiliser l'attaque spéciale
+            pathogens_before = len(self.tissue.pathogens)
+            self.immune_cell.use_special_ability(self.tissue)
+            self.immune_cell.special_ready = False
+            self.immune_cell.special_cooldown = self.immune_cell.special_cooldown_max
+
+            # Compter combien de pathogènes ont été affectés/tués
+            pathogens_after = len(self.tissue.pathogens)
+            pathogens_affected = pathogens_before - pathogens_after
+
+            # Ajouter une récompense pour l'utilisation efficace de l'attaque spéciale
+            if pathogens_affected > 0:
+                reward += pathogens_affected * 2.0  # Forte récompense pour chaque pathogène touché
+            else:
+                reward -= 0.5  # Légère pénalité pour utilisation inefficace
+
         return self._get_state(), reward, done
 
     def _is_near_wall(self):
@@ -192,6 +213,18 @@ class TrainingEnvironment:
             # Pénalité simple lorsqu'on est trop près
             if wall_dist < 30:
                 reward -= 0.5
+
+        # 5. Bonus pour l'élimination des pathogènes
+        pathogens_killed = prev_num_pathogens - len(self.tissue.pathogens)
+        if pathogens_killed > 0:
+            reward += pathogens_killed * 1.0  # Récompense pour chaque pathogène éliminé
+
+        # 6. Incitation à utiliser l'attaque spéciale quand plusieurs pathogènes sont proches
+        if self.immune_cell.special_ready:
+            nearby_pathogens = len(self.tissue.get_nearby_pathogens(
+                self.immune_cell.x, self.immune_cell.y, 100))  # Rayon de 100 unités
+            if nearby_pathogens >= 3:  # Si 3+ pathogènes sont proches
+                reward += 0.3  # Incitation à considérer l'attaque spéciale
 
         return reward
 

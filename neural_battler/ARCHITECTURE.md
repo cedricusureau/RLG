@@ -1,6 +1,6 @@
 # Architecture du projet Neural Battler
 
-*Document généré automatiquement le 30/03/2025 à 20:17:39*
+*Document généré automatiquement le 30/03/2025 à 20:19:14*
 
 ## Structure des fichiers
 
@@ -21,7 +21,8 @@
 ├── data/
     ├── neural_networks/
         ├── immune_cell_model_run_20250330_200817_ep100.pt
-        └── immune_cell_model_run_20250330_200817_ep200.pt
+        ├── immune_cell_model_run_20250330_200817_ep200.pt
+        └── immune_cell_model_run_20250330_200817_ep300.pt
     ├── stats/
         ├── training_performance.png
         ├── training_performance_run_20250330_185106.png

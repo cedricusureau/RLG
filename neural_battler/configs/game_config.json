@@ -1,0 +1,8 @@
+{
+  "grid_width": 20,
+  "grid_height": 15,
+  "cell_size": 32,
+  "max_characters": 10,
+  "character_types": ["tank", "dps", "healer"],
+  "training_mode": false
+}

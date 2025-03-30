@@ -159,7 +159,7 @@ def create_comparison_plots(results, timestamp):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Évaluation de modèles de lymphocyte")
     parser.add_argument("--models", nargs='+', help="Chemins vers les modèles à évaluer")
-    parser.add_argument("--dir", type=str, help="Dossier contenant les modèles à évaluer")
+    parser.add_argument("--dir", type=str, help="Dossier contenant les modèles à évaluer", default="data/neural_networks")
     parser.add_argument("--episodes", type=int, default=30, help="Nombre d'épisodes d'évaluation")
     parser.add_argument("--steps", type=int, default=1000, help="Nombre maximum de pas par épisode")
     parser.add_argument("--render", action="store_true", help="Afficher le rendu de l'évaluation")

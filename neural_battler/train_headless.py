@@ -4,6 +4,11 @@ import os
 from neural_battler.src.ai.training import train_immune_cell, evaluate_model, run_batch_training
 from neural_battler.src.helper.architecture import check_and_document_architecture
 
+import os
+from pathlib import Path
+
+# Changer le répertoire de travail à la racine du projet
+os.chdir(Path(__file__).parent)
 
 def main():
     # Vérifier et documenter l'architecture du projet

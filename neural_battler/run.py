@@ -14,7 +14,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         import argparse
         parser = argparse.ArgumentParser(description="Neural Battler")
-        parser.add_argument("--model", type=str, default=None,
+        parser.add_argument("--model", type=str, default="neural_battler/data/neural_networks/immune_cell_model_final.pt",
                           help="Chemin vers le modèle d'IA à utiliser (facultatif)")
         args = parser.parse_args()
         main(args.model)

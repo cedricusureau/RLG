@@ -1,6 +1,8 @@
 # neural_battler/src/game/world/tissue.py
+import random
 from neural_battler.src.game.entities.immune_cell import ImmuneCell
 from neural_battler.src.game.entities.pathogen import Pathogen
+
 
 class Tissue:
     def __init__(self, width, height):
@@ -10,7 +12,20 @@ class Tissue:
         self.pathogens = []
         self.effects = []  # Pour animations et effets visuels
 
+        # Paramètres d'apparition des pathogènes
+        self.initial_spawn_time = 180  # 3 secondes à 60 FPS
+        self.min_spawn_time = 30  # Intervalle minimal: 0.5 seconde
+        self.pathogen_spawn_timer = self.initial_spawn_time  # Timer initial
+        self.pathogen_spawn_cooldown = self.pathogen_spawn_timer
+
+        # Facteur de progression de la difficulté
+        self.difficulty_factor = 0.98  # Réduire le temps de 2% à chaque spawn
+        self.game_time = 0  # Compteur de temps de jeu
+
     def update(self):
+        # Mise à jour du compteur de temps
+        self.game_time += 1
+
         # Mise à jour de toutes les entités
         game_state = self  # Pour la simplicité
 
@@ -25,6 +40,21 @@ class Tissue:
             pathogen.update(game_state)
             if pathogen.is_dead():
                 self.pathogens.remove(pathogen)
+
+        # Gestion de l'apparition aléatoire des nouveaux pathogènes
+        self.pathogen_spawn_cooldown -= 1
+        if self.pathogen_spawn_cooldown <= 0 and self.can_add_pathogen():
+            # Spawn un nouveau pathogène à une position aléatoire
+            x = random.randint(50, self.width - 50)
+            y = random.randint(50, self.height - 50)
+            self.add_pathogen(x, y, "bacteria")
+
+            # Réduire le temps avant la prochaine apparition (difficulté progressive)
+            self.pathogen_spawn_timer = max(
+                self.min_spawn_time,
+                int(self.pathogen_spawn_timer * self.difficulty_factor)
+            )
+            self.pathogen_spawn_cooldown = self.pathogen_spawn_timer
 
         # Mise à jour des effets visuels (à implémenter plus tard)
         for effect in self.effects[:]:
@@ -65,7 +95,7 @@ class Tissue:
 
     def can_add_pathogen(self):
         # Limitation du nombre de pathogènes pour éviter les explosions de population
-        return len(self.pathogens) < 100
+        return len(self.pathogens) < 20  # Limitation à 20 pathogènes max
 
     def add_effect(self, effect_type, x, y, radius):
         # À implémenter plus tard

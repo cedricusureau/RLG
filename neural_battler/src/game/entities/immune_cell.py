@@ -11,104 +11,86 @@ class ImmuneCell:
         self.cell_type = cell_type
         self.health = 100
         self.max_health = 100
-        self.mana = 0
-        self.max_mana = 100
         self.attack_damage = 15
-        self.attack_range = 3
+        self.attack_range = 250  # Portée augmentée pour les projectiles
         self.attack_cooldown = 0
-        self.attack_cooldown_max = 30  # Frames entre chaque attaque
-        self.speed = 1.0
-        self.target = None
+        self.attack_cooldown_max = 45  # Frames entre chaque tir
         self.radius = 15  # Rayon du cercle représentant la cellule
         self.color = (0, 0, 255)  # Bleu pour les cellules immunitaires
+        self.projectiles = []  # Liste pour stocker les projectiles
 
     def update(self, game_state):
-        # Récupération des pathogens proches
+        # Récupération des pathogens à portée
         pathogens = game_state.get_nearby_pathogens(self.x, self.y, self.attack_range)
-
-        # Recherche d'une cible si on n'en a pas
-        if not self.target or self.target not in pathogens:
-            if pathogens:
-                self.target = self.find_closest_target(pathogens)
-            else:
-                self.target = None
 
         # Gestion du cooldown d'attaque
         if self.attack_cooldown > 0:
             self.attack_cooldown -= 1
 
-        # Attaque si une cible est disponible
-        if self.target and self.attack_cooldown == 0:
-            self.attack(self.target)
-            # Chaque attaque de base génère du mana
-            self.mana = min(self.max_mana, self.mana + 20)
+        # Tir si des pathogènes sont à portée et cooldown terminé
+        if pathogens and self.attack_cooldown == 0:
+            closest_pathogen = self.find_closest_target(pathogens)
+            if closest_pathogen:
+                self.shoot_at(closest_pathogen)
+                self.attack_cooldown = self.attack_cooldown_max
 
-        # Utilisation de la capacité spéciale si mana plein
-        if self.mana >= self.max_mana:
-            self.use_special_ability(game_state)
+        # Mise à jour des projectiles
+        self.update_projectiles(game_state)
 
-        # Déplacement vers la cible ou errance aléatoire
-        if self.target:
-            self.move_towards_target()
-        else:
-            self.wander()
-
-    def move_towards_target(self):
-        if not self.target:
-            return
-
-        dx = self.target.x - self.x
-        dy = self.target.y - self.y
+    def shoot_at(self, target):
+        # Créer un nouveau projectile
+        dx = target.x - self.x
+        dy = target.y - self.y
         distance = math.sqrt(dx ** 2 + dy ** 2)
 
-        # Ne se déplace que si la cible est hors de portée d'attaque
-        if distance > self.attack_range:
-            # Normalisation et application de la vitesse
-            if distance > 0:
-                dx = dx / distance * self.speed
-                dy = dy / distance * self.speed
+        # Normaliser le vecteur de direction
+        if distance > 0:
+            dx = dx / distance * 3  # Vitesse du projectile
+            dy = dy / distance * 3
 
-            self.x += dx
-            self.y += dy
+        projectile = {
+            'x': self.x,
+            'y': self.y,
+            'dx': dx,
+            'dy': dy,
+            'damage': self.attack_damage,
+            'radius': 5,
+            'color': (0, 255, 255)  # Cyan pour les projectiles
+        }
 
-    def wander(self):
-        # Mouvement aléatoire quand pas de cible
-        dx = random.uniform(-0.5, 0.5) * self.speed
-        dy = random.uniform(-0.5, 0.5) * self.speed
+        self.projectiles.append(projectile)
 
-        # Vérifie que le mouvement reste dans les limites du terrain
-        # (nécessite une méthode is_valid_position dans game_state)
-        new_x = self.x + dx
-        new_y = self.y + dy
+    def update_projectiles(self, game_state):
+        # Mettre à jour la position de chaque projectile et vérifier les collisions
+        projectiles_to_remove = []
 
-        # Pour le prototype, nous supposerons que c'est valide
-        self.x = new_x
-        self.y = new_y
+        for i, projectile in enumerate(self.projectiles):
+            # Mettre à jour la position
+            projectile['x'] += projectile['dx']
+            projectile['y'] += projectile['dy']
 
-    def attack(self, target):
-        target.take_damage(self.attack_damage)
-        self.attack_cooldown = self.attack_cooldown_max
+            # Vérifier si le projectile est hors limites
+            if (projectile['x'] < 0 or projectile['x'] > game_state.width or
+                    projectile['y'] < 0 or projectile['y'] > game_state.height):
+                projectiles_to_remove.append(i)
+                continue
 
-    def use_special_ability(self, game_state):
-        # Implémentation de la capacité spéciale du LT: attaque de zone
-        pathogens = game_state.get_nearby_pathogens(self.x, self.y, self.attack_range * 2)
+            # Vérifier les collisions avec les pathogènes
+            for pathogen in game_state.pathogens:
+                dx = pathogen.x - projectile['x']
+                dy = pathogen.y - projectile['y']
+                distance = math.sqrt(dx ** 2 + dy ** 2)
 
-        for pathogen in pathogens:
-            pathogen.take_damage(self.attack_damage * 2)
+                if distance < pathogen.radius + projectile['radius']:
+                    # Collision détectée
+                    pathogen.take_damage(projectile['damage'])
+                    projectiles_to_remove.append(i)
+                    break
 
-        # Animation simple pour l'attaque spéciale (ajout ultérieur)
-        # game_state.add_effect("aoe_attack", self.x, self.y, self.attack_range * 2)
-
-        # Réinitialisation du mana
-        self.mana = 0
-
-    def take_damage(self, damage):
-        self.health -= damage
-        if self.health <= 0:
-            self.health = 0
-
-    def is_dead(self):
-        return self.health <= 0
+        # Supprimer les projectiles qui ont frappé une cible ou sont hors limites
+        for i in sorted(projectiles_to_remove, reverse=True):
+            if i < len(self.projectiles):
+                self.projectiles.pop(i)
 
     def find_closest_target(self, targets):
         closest = None
@@ -124,6 +106,14 @@ class ImmuneCell:
                 closest = target
 
         return closest
+
+    def take_damage(self, damage):
+        self.health -= damage
+        if self.health <= 0:
+            self.health = 0
+
+    def is_dead(self):
+        return self.health <= 0
 
     def draw(self, screen, offset_x=0, offset_y=0):
         # Dessine la cellule immunitaire
@@ -144,15 +134,8 @@ class ImmuneCell:
         pygame.draw.rect(screen, (0, 255, 0),
                          (health_x, health_y, health_width, health_height))
 
-        # Dessine la barre de mana
-        mana_width = int(self.radius * 2 * (self.mana / self.max_mana))
-        mana_height = 3
-        mana_x = int(self.x + offset_x - self.radius)
-        mana_y = int(self.y + offset_y - self.radius - 5)
-
-        # Fond de la barre de mana
-        pygame.draw.rect(screen, (100, 100, 100),
-                         (mana_x, mana_y, self.radius * 2, mana_height))
-        # Barre de mana active
-        pygame.draw.rect(screen, (0, 0, 255),
-                         (mana_x, mana_y, mana_width, mana_height))
+        # Dessine les projectiles
+        for projectile in self.projectiles:
+            pygame.draw.circle(screen, projectile['color'],
+                               (int(projectile['x'] + offset_x), int(projectile['y'] + offset_y)),
+                               projectile['radius'])

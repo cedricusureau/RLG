@@ -12,52 +12,37 @@ class Pathogen:
         self.health = 50
         self.max_health = 50
         self.attack_damage = 5
-        self.attack_range = 1.5
+        self.attack_range = 1.5  # Portée d'attaque courte
         self.attack_cooldown = 0
-        self.attack_cooldown_max = 45  # Plus lent que les cellules immunitaires
+        self.attack_cooldown_max = 45
         self.speed = 0.7
-        self.target = None
-        self.radius = 10  # Plus petit que les cellules immunitaires
+        self.radius = 10
         self.color = (255, 0, 0)  # Rouge pour les pathogènes
-        self.division_timer = random.randint(500, 1000)  # Temps avant division
 
     def update(self, game_state):
-        # Récupération des cellules immunitaires proches
-        immune_cells = game_state.get_nearby_immune_cells(self.x, self.y, self.attack_range)
+        # Les bactéries ciblent maintenant toujours le lymphocyte
+        if game_state.immune_cells:
+            # Toujours cibler le lymphocyte (premier dans la liste)
+            self.target = game_state.immune_cells[0]
 
-        # Recherche d'une cible si on n'en a pas
-        if not self.target or self.target not in immune_cells:
-            if immune_cells:
-                self.target = self.find_closest_target(immune_cells)
+            # Calculer la distance au lymphocyte
+            dx = self.target.x - self.x
+            dy = self.target.y - self.y
+            distance = math.sqrt(dx ** 2 + dy ** 2)
+
+            # Si la bactérie est à portée d'attaque et le cooldown est terminé
+            if distance <= self.attack_range + self.radius + self.target.radius and self.attack_cooldown == 0:
+                self.attack(self.target)
             else:
-                self.target = None
+                # Sinon, se déplacer vers le lymphocyte
+                self.move_towards_target()
 
-        # Gestion du cooldown d'attaque
-        if self.attack_cooldown > 0:
-            self.attack_cooldown -= 1
-
-        # Attaque si une cible est disponible
-        if self.target and self.attack_cooldown == 0:
-            self.attack(self.target)
-
-        # Déplacement vers la cible ou errance aléatoire
-        if self.target:
-            self.move_towards_target()
+            # Gestion du cooldown d'attaque
+            if self.attack_cooldown > 0:
+                self.attack_cooldown -= 1
         else:
+            # Si pas de lymphocyte, errer aléatoirement
             self.wander()
-
-        # Gestion de la division bactérienne
-        if self.pathogen_type == "bacteria":
-            self.division_timer -= 1
-            if self.division_timer <= 0 and self.health > self.max_health * 0.6:
-                # Création d'une nouvelle bactérie si suffisamment de santé
-                if game_state.can_add_pathogen():
-                    new_x = self.x + random.uniform(-20, 20)
-                    new_y = self.y + random.uniform(-20, 20)
-                    game_state.add_pathogen(new_x, new_y, "bacteria")
-                    # La division coûte de la santé
-                    self.health -= self.max_health * 0.3
-                    self.division_timer = random.randint(500, 1000)
 
     def move_towards_target(self):
         if not self.target:
@@ -67,13 +52,10 @@ class Pathogen:
         dy = self.target.y - self.y
         distance = math.sqrt(dx ** 2 + dy ** 2)
 
-        # Ne se déplace que si la cible est hors de portée d'attaque
-        if distance > self.attack_range:
-            # Normalisation et application de la vitesse
-            if distance > 0:
-                dx = dx / distance * self.speed
-                dy = dy / distance * self.speed
-
+        # Si la distance est positive, se déplacer vers la cible
+        if distance > 0:
+            dx = dx / distance * self.speed
+            dy = dy / distance * self.speed
             self.x += dx
             self.y += dy
 
@@ -101,21 +83,6 @@ class Pathogen:
 
     def is_dead(self):
         return self.health <= 0
-
-    def find_closest_target(self, targets):
-        closest = None
-        min_distance = float('inf')
-
-        for target in targets:
-            dx = target.x - self.x
-            dy = target.y - self.y
-            distance = math.sqrt(dx ** 2 + dy ** 2)
-
-            if distance < min_distance:
-                min_distance = distance
-                closest = target
-
-        return closest
 
     def draw(self, screen, offset_x=0, offset_y=0):
         # Dessine le pathogène

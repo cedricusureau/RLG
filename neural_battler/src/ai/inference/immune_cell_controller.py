@@ -1,6 +1,6 @@
 # neural_battler/src/ai/inference/immune_cell_controller.py
 import torch
-from ..models.immune_cell_model import ImmuneCellAgent
+from ..models import ImmuneCellAgent
 
 
 class ImmuneCellController:

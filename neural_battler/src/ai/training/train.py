@@ -5,8 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import argparse
-from ..models.immune_cell_model import ImmuneCellAgent
-from .environment import TrainingEnvironment
+from ..models import ImmuneCellAgent
+from . import TrainingEnvironment
 
 
 def train_immune_cell(episodes=1000, batch_size=64, save_interval=100, model_path=None):

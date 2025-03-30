@@ -4,7 +4,7 @@ import sys
 import argparse
 
 # Imports relatifs à la position du fichier
-from src.game.world.tissue import Tissue
+from src.game import Tissue
 from src.helper.architecture import check_and_document_architecture
 
 # Initialisation de Pygame

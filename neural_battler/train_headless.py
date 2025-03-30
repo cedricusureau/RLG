@@ -1,9 +1,7 @@
 # neural_battler/train_headless.py
 import argparse
 import os
-from neural_battler.src.ai.training.train import train_immune_cell
-from neural_battler.src.ai.training.evaluate import evaluate_model
-from neural_battler.src.ai.training.batch_training import run_batch_training
+from neural_battler.src.ai.training import train_immune_cell, evaluate_model, run_batch_training
 from neural_battler.src.helper.architecture import check_and_document_architecture
 
 

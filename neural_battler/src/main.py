@@ -1,10 +1,10 @@
 # main.py
 import pygame
 import sys
-from game.world.tissue import Tissue
-from game.entities.immune_cell import ImmuneCell
-from game.entities.pathogen import Pathogen
-from helper.architecture import check_and_document_architecture
+
+from neural_battler.src.game.world import Tissue
+from neural_battler.src.game.entities import ImmuneCell, Pathogen
+from neural_battler.src.helper.architecture import check_and_document_architecture
 
 # Initialisation de Pygame
 pygame.init()

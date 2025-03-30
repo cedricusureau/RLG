@@ -1,4 +1,7 @@
-# src/game/world/tissue.py
+# neural_battler/src/game/world/tissue.py
+from neural_battler.src.game.entities.immune_cell import ImmuneCell
+from neural_battler.src.game.entities.pathogen import Pathogen
+
 class Tissue:
     def __init__(self, width, height):
         self.width = width
@@ -51,13 +54,11 @@ class Tissue:
         return nearby
 
     def add_immune_cell(self, x, y, cell_type="t_cell"):
-        from game.entities.immune_cell import ImmuneCell
         cell = ImmuneCell(x, y, cell_type)
         self.immune_cells.append(cell)
         return cell
 
     def add_pathogen(self, x, y, pathogen_type="bacteria"):
-        from game.entities.pathogen import Pathogen
         pathogen = Pathogen(x, y, pathogen_type)
         self.pathogens.append(pathogen)
         return pathogen

@@ -1,8 +1,8 @@
 # neural_battler/train_headless.py
 import argparse
 import os
-from neural_battler.src.ai.training import train_immune_cell, evaluate_model, run_batch_training
-from neural_battler.src.helper.architecture import check_and_document_architecture
+from src.ai.training import train_immune_cell, evaluate_model, run_batch_training
+from src.helper.architecture import check_and_document_architecture
 
 import os
 from pathlib import Path
@@ -27,7 +27,7 @@ def main():
 
     # Parseur pour la commande 'batch'
     batch_parser = subparsers.add_parser("batch", help="Exécuter un entraînement en lot")
-    batch_parser.add_argument("--sessions", type=int, default=5, help="Nombre de sessions d'entraînement")
+    batch_parser.add_argument("--sessions", type=int, default=2, help="Nombre de sessions d'entraînement")
     batch_parser.add_argument("--episodes", type=int, default=500, help="Nombre d'épisodes par session")
     batch_parser.add_argument("--batch-size", type=int, default=64, help="Taille du batch pour l'entraînement")
     batch_parser.add_argument("--save-interval", type=int, default=100, help="Intervalle de sauvegarde du modèle")

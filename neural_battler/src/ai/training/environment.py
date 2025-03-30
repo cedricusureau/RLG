@@ -1,13 +1,12 @@
-# neural_battler/src/ai/training/environment.py
 import numpy as np
 import random
 from ...game.world.tissue import Tissue
-from ...game.entities.immune_cell import ImmuneCell
-from ...game.entities.pathogen import Pathogen
-from ..models import ImmuneCellAgent  # Import simplifié
+from ..models import ImmuneCellAgent
 
 
 class TrainingEnvironment:
+    """Environnement d'entraînement pour un agent lymphocyte par renforcement"""
+
     def __init__(self, width=800, height=600, max_steps=1000):
         self.width = width
         self.height = height
@@ -16,55 +15,55 @@ class TrainingEnvironment:
         self.tissue = None
         self.immune_cell = None
         self.default_speed = 1.0
-
-        # Créer une seule instance de l'agent qui sera réutilisée
+        self.wall_stuck_counter = 0
         self.helper_agent = ImmuneCellAgent(23, 9)
-
+        self.center_x = width / 2
+        self.center_y = height / 2
         self.reset()
 
     def reset(self):
-        """
-        Réinitialise l'environnement pour un nouvel épisode
-        """
+        """Réinitialise l'environnement pour un nouvel épisode"""
         self.current_step = 0
+        self.wall_stuck_counter = 0
         self.tissue = Tissue(self.width, self.height)
 
         # Placer le lymphocyte au centre
-        self.immune_cell = self.tissue.add_immune_cell(self.width / 2, self.height / 2, "t_cell")
+        self.immune_cell = self.tissue.add_immune_cell(self.center_x, self.center_y, "t_cell")
+
+        # Position précédente pour calculer les mouvements
+        self.prev_pos_x = self.center_x
+        self.prev_pos_y = self.center_y
 
         # Ajouter quelques pathogènes aléatoirement
         for _ in range(5):
-            x = random.uniform(50, self.width - 50)
-            y = random.uniform(50, self.height - 50)
-            self.tissue.add_pathogen(x, y, "bacteria")
+            self._spawn_random_pathogen()
 
-        # État initial
-        state = self._get_state()
-        return state
+        return self._get_state()
 
     def _get_state(self):
-        """
-        Récupère l'état actuel pour l'agent
-        """
-        # Utiliser l'instance réutilisable au lieu d'en créer une nouvelle
-        return self.helper_agent.get_state(self.immune_cell, self.tissue.pathogens, self.width, self.height)
+        """Récupère l'état actuel pour l'agent"""
+        return self.helper_agent.get_state(
+            self.immune_cell,
+            self.tissue.pathogens,
+            self.width,
+            self.height
+        )
 
     def step(self, action):
-        """
-        Effectue une action et retourne le nouvel état, la récompense, et si l'épisode est terminé
-        """
-        # Utiliser l'instance réutilisable
+        """Effectue une action et retourne le nouvel état, la récompense, et si l'épisode est terminé"""
+        # Obtenir le vecteur de mouvement
         dx, dy = self.helper_agent.action_to_movement(action, self.default_speed)
 
         # Sauvegarder l'état précédent
         prev_health = self.immune_cell.health
         prev_num_pathogens = len(self.tissue.pathogens)
+        prev_pos_x, prev_pos_y = self.immune_cell.x, self.immune_cell.y
 
         # Appliquer le mouvement
         new_x = self.immune_cell.x + dx
         new_y = self.immune_cell.y + dy
 
-        # Vérifier que la nouvelle position est valide
+        # Vérifier si la position est valide
         if self.tissue.is_valid_position(new_x, new_y):
             self.immune_cell.x = new_x
             self.immune_cell.y = new_y
@@ -73,158 +72,163 @@ class TrainingEnvironment:
         self.tissue.update()
         self.current_step += 1
 
-        # Après avoir mis à jour l'environnement avec tissue.update()
-        self.tissue.update()
-        self.current_step += 1
+        # Vérifier si l'agent est bloqué contre un mur
+        if self._is_near_wall():
+            if abs(self.immune_cell.x - prev_pos_x) < 0.1 and abs(self.immune_cell.y - prev_pos_y) < 0.1:
+                self.wall_stuck_counter += 1
+            else:
+                self.wall_stuck_counter = 0
+        else:
+            self.wall_stuck_counter = 0
 
-        # Ajouter cette nouvelle logique de spawn près des murs
-        if self._is_near_wall() and random.random() < 0.1:  # 10% de chance par pas de temps
-            # Spawn un pathogène près du mur le plus proche
-            wall_spawn_pos = self._get_nearest_wall_position()
-            self.tissue.add_pathogen(wall_spawn_pos[0], wall_spawn_pos[1], "bacteria")
+        # Spawn de pathogènes près des murs avec probabilité réduite
+        if self._is_near_wall() and random.random() < 0.05:
+            self._spawn_pathogen_near_wall()
 
         # Calculer la récompense
-        reward = self._calculate_reward(prev_health, prev_num_pathogens)
+        reward = self._calculate_reward(prev_health, prev_num_pathogens, dx, dy)
 
-        # Vérifier si l'épisode est terminé
-        done = self.immune_cell.is_dead() or self.current_step >= self.max_steps
+        # Vérifier la condition de fin
+        done = (
+                self.immune_cell.is_dead() or
+                self.current_step >= self.max_steps or
+                self.wall_stuck_counter >= 20  # Terminer l'épisode si bloqué trop longtemps
+        )
 
-        # Si tous les pathogènes sont éliminés, ajouter un bonus et en générer de nouveaux
+        # Respawn des pathogènes si tous sont éliminés
         if len(self.tissue.pathogens) == 0:
-            reward += 10.0  # Bonus pour avoir éliminé tous les pathogènes
-            for _ in range(random.randint(3, 7)):
-                x = random.uniform(50, self.width - 50)
-                y = random.uniform(50, self.height - 50)
-                self.tissue.add_pathogen(x, y, "bacteria")
+            reward += 5.0  # Bonus pour avoir éliminé tous les pathogènes
+            for _ in range(random.randint(3, 5)):
+                self._spawn_random_pathogen()
 
-        # Obtenir le nouvel état
-        next_state = self._get_state()
+        # Forcer occasionnellement une action vers le centre si près d'un mur
+        if self._is_near_wall() and random.random() < 0.15 and not done:
+            self._apply_center_force()
 
-        return next_state, reward, done
+        return self._get_state(), reward, done
 
     def _is_near_wall(self):
         """Vérifie si le lymphocyte est proche d'un mur"""
-        margin = 50  # Distance considérée comme "proche"
-        return (self.immune_cell.x < margin or
+        margin = 60
+        return (
+                self.immune_cell.x < margin or
                 self.immune_cell.x > self.width - margin or
                 self.immune_cell.y < margin or
-                self.immune_cell.y > self.height - margin)
+                self.immune_cell.y > self.height - margin
+        )
 
-    def _get_nearest_wall_position(self):
-        """Détermine les coordonnées pour spawner un pathogène près du mur le plus proche"""
-        # Calculer les distances aux murs
-        dist_left = self.immune_cell.x
-        dist_right = self.width - self.immune_cell.x
-        dist_top = self.immune_cell.y
-        dist_bottom = self.height - self.immune_cell.y
+    def _spawn_random_pathogen(self):
+        """Génère un pathogène à une position aléatoire loin des murs"""
+        margin = 100
+        x = random.uniform(margin, self.width - margin)
+        y = random.uniform(margin, self.height - margin)
+        self.tissue.add_pathogen(x, y, "bacteria")
 
-        # Trouver le mur le plus proche
-        min_dist = min(dist_left, dist_right, dist_top, dist_bottom)
+    def _spawn_pathogen_near_wall(self):
+        """Génère un pathogène près du mur le plus proche du lymphocyte"""
+        distances = [
+            (self.immune_cell.x, "left"),
+            (self.width - self.immune_cell.x, "right"),
+            (self.immune_cell.y, "top"),
+            (self.height - self.immune_cell.y, "bottom")
+        ]
 
-        # Ajouter un peu de variation aléatoire
+        dist, wall = min(distances, key=lambda x: x[0])
         variation = 30
 
-        # Générer la position en fonction du mur le plus proche
-        if min_dist == dist_left:
-            # Près du mur gauche
-            return (random.randint(0, 20),
-                    self.immune_cell.y + random.randint(-variation, variation))
-        elif min_dist == dist_right:
-            # Près du mur droit
-            return (random.randint(self.width - 20, self.width),
-                    self.immune_cell.y + random.randint(-variation, variation))
-        elif min_dist == dist_top:
-            # Près du mur supérieur
-            return (self.immune_cell.x + random.randint(-variation, variation),
-                    random.randint(0, 20))
-        else:
-            # Près du mur inférieur
-            return (self.immune_cell.x + random.randint(-variation, variation),
-                    random.randint(self.height - 20, self.height))
+        if wall == "left":
+            pos = (random.randint(0, 20), self.immune_cell.y + random.randint(-variation, variation))
+        elif wall == "right":
+            pos = (
+            random.randint(self.width - 20, self.width), self.immune_cell.y + random.randint(-variation, variation))
+        elif wall == "top":
+            pos = (self.immune_cell.x + random.randint(-variation, variation), random.randint(0, 20))
+        else:  # bottom
+            pos = (
+            self.immune_cell.x + random.randint(-variation, variation), random.randint(self.height - 20, self.height))
 
+        self.tissue.add_pathogen(pos[0], pos[1], "bacteria")
 
-    def _calculate_reward(self, prev_health, prev_num_pathogens):
-        """
-        Calcule la récompense en fonction des changements d'état
-        """
+    def _apply_center_force(self):
+        """Force un mouvement vers le centre"""
+        dir_x = self.center_x - self.immune_cell.x
+        dir_y = self.center_y - self.immune_cell.y
+        dist = np.sqrt(dir_x ** 2 + dir_y ** 2)
+
+        if dist > 0:
+            # Amplifier le mouvement pour créer un "coup de pouce" plus fort
+            force = 1.5 * self.default_speed
+            self.immune_cell.x += (dir_x / dist) * force
+            self.immune_cell.y += (dir_y / dist) * force
+
+    def _calculate_reward(self, prev_health, prev_num_pathogens, dx, dy):
+        """Calcule la récompense basée sur plusieurs facteurs"""
         reward = 0.0
 
-        # Récompense de survie
-        reward += 0.1  # Petite récompense pour chaque pas de temps survécu
+        # 1. Récompense de base pour la survie
+        reward += 0.1
 
-        # Pénalité pour perte de santé
+        # 2. Récompense/pénalité pour changement de santé
         health_diff = self.immune_cell.health - prev_health
-        reward += health_diff * 0.05  # Pénalité pour chaque point de vie perdu
+        reward += health_diff * 0.1
 
-        # Récompense pour la distance aux pathogènes (fuite)
-        min_distance = float('inf')
-        for pathogen in self.tissue.pathogens:
-            dx = pathogen.x - self.immune_cell.x
-            dy = pathogen.y - self.immune_cell.y
-            distance = np.sqrt(dx ** 2 + dy ** 2)
-            min_distance = min(min_distance, distance)
+        # 3. Pénalité pour être près d'un mur
+        if self._is_near_wall():
+            # Distance au mur le plus proche
+            wall_dist = min(
+                self.immune_cell.x,
+                self.width - self.immune_cell.x,
+                self.immune_cell.y,
+                self.height - self.immune_cell.y
+            )
+            # Pénalité qui augmente à mesure qu'on s'approche du mur
+            wall_penalty = 0.5 * (1 - (wall_dist / 60))
+            reward -= wall_penalty
 
-        # Récompenser le maintien d'une distance de sécurité
-        safe_distance = 100  # Distance considérée comme "sûre"
-        if min_distance < float('inf'):
-            if min_distance > safe_distance:
-                reward += 0.2  # Récompense pour maintenir la distance
-            else:
-                # Récompense proportionnelle à la distance (plus c'est proche, plus la pénalité est grande)
+            # Pénalité sévère pour immobilité près des murs
+            if abs(dx) < 0.1 and abs(dy) < 0.1:
+                reward -= 1.0
+
+            # Récompense pour mouvement vers le centre quand près d'un mur
+            dir_to_center_x = self.center_x - self.immune_cell.x
+            dir_to_center_y = self.center_y - self.immune_cell.y
+            center_dist = np.sqrt(dir_to_center_x ** 2 + dir_to_center_y ** 2)
+
+            if center_dist > 0:
+                # Vérifier si le mouvement est orienté vers le centre
+                dot_product = (dx * dir_to_center_x + dy * dir_to_center_y) / center_dist
+                if dot_product > 0:  # Si le mouvement est vers le centre
+                    reward += 1.0 * dot_product
+
+        # 4. Récompense pour maintenir une distance de sécurité avec les pathogènes
+        if self.tissue.pathogens:
+            min_distance = float('inf')
+            for pathogen in self.tissue.pathogens:
+                dist = np.sqrt((pathogen.x - self.immune_cell.x) ** 2 + (pathogen.y - self.immune_cell.y) ** 2)
+                min_distance = min(min_distance, dist)
+
+            safe_distance = 100
+            if min_distance < safe_distance:
+                # Petite récompense proportionnelle à la distance
                 reward += 0.2 * (min_distance / safe_distance)
+            else:
+                reward += 0.2  # Récompense complète si à distance sûre
 
-        # Grande pénalité si le lymphocyte meurt
+        # 5. Pénalité progressive si bloqué contre un mur
+        if self.wall_stuck_counter > 0:
+            reward -= 0.5 * self.wall_stuck_counter
+
+        # 6. Forte pénalité si mort
         if self.immune_cell.is_dead():
             reward -= 10.0
 
-        wall_penalty = self._calculate_wall_penalty()
-        reward -= wall_penalty
-
         return reward
 
-    def _calculate_wall_penalty(self):
-        """Calcule une pénalité pour la proximité aux bords"""
-        # Distance aux quatre murs
-        dist_left = self.immune_cell.x
-        dist_right = self.width - self.immune_cell.x
-        dist_top = self.immune_cell.y
-        dist_bottom = self.height - self.immune_cell.y
-
-        # Trouver la distance minimale à un mur
-        min_dist = min(dist_left, dist_right, dist_top, dist_bottom)
-
-        # Zone sûre (pas de pénalité)
-        safe_margin = 100
-
-        if min_dist < safe_margin:
-            # Pénalité augmente exponentiellement plus on s'approche du mur
-            # La formule peut être ajustée selon la sensibilité désirée
-            return 0.5 * ((safe_margin - min_dist) / safe_margin) ** 2
-
-        return 0.0
-
-    def _calculate_center_reward(self):
-        """Récompense pour rester près du centre"""
-        center_x = self.width / 2
-        center_y = self.height / 2
-
-        # Distance au centre
-        dx = self.immune_cell.x - center_x
-        dy = self.immune_cell.y - center_y
-        distance = np.sqrt(dx ** 2 + dy ** 2)
-
-        # Rayon de la zone centrale considérée comme optimale
-        optimal_radius = self.width / 4
-
-        if distance < optimal_radius:
-            return 0.1  # Récompense constante dans la zone optimale
-        else:
-            # Récompense diminue avec la distance
-            return 0.1 * (optimal_radius / distance)
-
-
     def render(self):
-        """
-        Version simplifiée du rendu (pour le débogage)
-        """
-        print(f"Step: {self.current_step}, Health: {self.immune_cell.health}, Pathogens: {len(self.tissue.pathogens)}")
+        """Version simplifiée du rendu pour débogage"""
+        status = "✓" if not self._is_near_wall() else "⚠"
+        if self.wall_stuck_counter > 0:
+            status = f"⚠ Bloqué: {self.wall_stuck_counter}"
+
+        print(
+            f"Étape: {self.current_step}, Santé: {self.immune_cell.health}, Pathogènes: {len(self.tissue.pathogens)} {status}")

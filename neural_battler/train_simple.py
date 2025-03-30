@@ -14,8 +14,8 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Entraînement d'un agent de lymphocyte")
-    parser.add_argument("--episodes", type=int, default=100, help="Nombre d'épisodes d'entraînement")
-    parser.add_argument("--batch-size", type=int, default=32, help="Taille du batch")
+    parser.add_argument("--episodes", type=int, default=250, help="Nombre d'épisodes d'entraînement")
+    parser.add_argument("--batch-size", type=int, default=64, help="Taille du batch")
     parser.add_argument("--save-interval", type=int, default=10, help="Intervalle de sauvegarde")
     parser.add_argument("--model", type=str, default=None, help="Chemin vers un modèle existant")
 

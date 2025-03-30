@@ -101,10 +101,6 @@ class TrainingEnvironment:
             for _ in range(random.randint(3, 5)):
                 self._spawn_random_pathogen()
 
-        # Forcer occasionnellement une action vers le centre si près d'un mur
-        if self._is_near_wall() and random.random() < 0.15 and not done:
-            self._apply_center_force()
-
         return self._get_state(), reward, done
 
     def _is_near_wall(self):

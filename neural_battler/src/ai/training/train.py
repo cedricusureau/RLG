@@ -7,7 +7,7 @@ from tqdm import tqdm
 import argparse
 from ..models import ImmuneCellAgent
 from .environment import TrainingEnvironment  # Import direct depuis le module
-import datetime
+from datetime import datetime
 
 def train_immune_cell(episodes=1000, batch_size=64, save_interval=100, model_path=None):
     """

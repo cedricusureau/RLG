@@ -1,9 +1,9 @@
 # neural_battler/src/ai/training/environment.py
 import numpy as np
 import random
-from neural_battler.src.game.world.tissue import Tissue
-from neural_battler.src.game.entities.immune_cell import ImmuneCell
-from neural_battler.src.game.entities.pathogen import Pathogen
+from ...game.world.tissue import Tissue
+from ...game.entities.immune_cell import ImmuneCell
+from ...game.entities.pathogen import Pathogen
 
 
 class TrainingEnvironment:

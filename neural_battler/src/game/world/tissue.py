@@ -1,7 +1,8 @@
 # neural_battler/src/game/world/tissue.py
 import random
-from neural_battler.src.game.entities.immune_cell import ImmuneCell
-from neural_battler.src.game.entities.pathogen import Pathogen
+
+from ..entities.immune_cell import ImmuneCell
+from ..entities.pathogen import Pathogen
 
 
 class Tissue:
@@ -83,8 +84,8 @@ class Tissue:
                 nearby.append(cell)
         return nearby
 
-    def add_immune_cell(self, x, y, cell_type="t_cell"):
-        cell = ImmuneCell(x, y, cell_type)
+    def add_immune_cell(self, x, y, cell_type="t_cell", ai_model_path=None):
+        cell = ImmuneCell(x, y, cell_type, ai_model_path)
         self.immune_cells.append(cell)
         return cell
 

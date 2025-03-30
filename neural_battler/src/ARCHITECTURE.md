@@ -1,6 +1,6 @@
 # Architecture du projet Neural Battler
 
-*Document généré automatiquement le 30/03/2025 à 13:02:45*
+*Document généré automatiquement le 30/03/2025 à 13:51:22*
 
 ## Structure des fichiers
 

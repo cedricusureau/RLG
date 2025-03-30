@@ -2,10 +2,11 @@
 import pygame
 import sys
 import argparse
+import os
+from pathlib import Path
 
-# Imports relatifs à la position du fichier
-from .game import Tissue
-from .helper.architecture import check_and_document_architecture
+# Imports relatifs
+from .game.world.tissue import Tissue
 
 # Initialisation de Pygame
 pygame.init()
@@ -25,7 +26,7 @@ RED = (255, 0, 0)
 
 
 def draw_grid(screen, cell_size=50):
-    # Dessine une grille de référence
+    """Dessine une grille de référence"""
     for x in range(0, SCREEN_WIDTH, cell_size):
         pygame.draw.line(screen, GRID_COLOR, (x, 0), (x, SCREEN_HEIGHT))
     for y in range(0, SCREEN_HEIGHT, cell_size):
@@ -33,7 +34,7 @@ def draw_grid(screen, cell_size=50):
 
 
 def draw_stats(screen, tissue, font, survival_time=None, steps_survived=None):
-    # Affiche des statistiques sur l'écran
+    """Affiche des statistiques sur l'écran"""
     immune_count = len(tissue.immune_cells)
     pathogen_count = len(tissue.pathogens)
 
@@ -41,6 +42,12 @@ def draw_stats(screen, tissue, font, survival_time=None, steps_survived=None):
         lt_health = tissue.immune_cells[0].health
         health_text = font.render(f"Santé du lymphocyte: {lt_health}", True, (0, 0, 128))
         screen.blit(health_text, (10, 70))
+
+        # Afficher l'état de la capacité spéciale
+        if hasattr(tissue.immune_cells[0], 'special_ready'):
+            special_status = "Prête" if tissue.immune_cells[0].special_ready else "En recharge"
+            special_text = font.render(f"Capacité spéciale: {special_status}", True, (128, 0, 128))
+            screen.blit(special_text, (10, 100))
 
     immune_text = font.render(f"Cellules immunitaires: {immune_count}", True, (0, 0, 128))
     pathogen_text = font.render(f"Pathogènes: {pathogen_count}", True, (128, 0, 0))
@@ -51,15 +58,19 @@ def draw_stats(screen, tissue, font, survival_time=None, steps_survived=None):
     # Afficher le temps de survie si fourni (pour le mode IA)
     if survival_time is not None:
         time_text = font.render(f"Temps de survie: {survival_time:.1f}s", True, (0, 100, 0))
-        screen.blit(time_text, (10, 100))
+        screen.blit(time_text, (10, 130))
 
     if steps_survived is not None:
         steps_text = font.render(f"Pas: {steps_survived}", True, (0, 100, 0))
-        screen.blit(steps_text, (10, 130))
+        screen.blit(steps_text, (10, 160))
+
+    # Afficher les commandes
+    controls_text = font.render("Contrôles: Flèches pour se déplacer, ESPACE pour capacité spéciale", True, (0, 0, 0))
+    screen.blit(controls_text, (10, SCREEN_HEIGHT - 30))
 
 
 def draw_game_over(screen):
-    # Affiche l'écran de fin de jeu
+    """Affiche l'écran de fin de jeu"""
     overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
     overlay.set_alpha(180)  # Semi-transparent
     overlay.fill(BLACK)
@@ -130,6 +141,13 @@ def main(model_path=None):
                     survival_time = 0
                     spawn_timer = 0
                     game_over = False
+                # Utiliser la capacité spéciale en mode manuel
+                elif event.key == pygame.K_SPACE and not game_over and not model_path:
+                    if lt.special_ready:
+                        lt.use_special_ability(tissue)
+                        lt.special_ready = False
+                        lt.special_cooldown = lt.special_cooldown_max
+                        print("Capacité spéciale utilisée!")
 
         # Vérifier si le lymphocyte est mort
         if not game_over and (not tissue.immune_cells or tissue.immune_cells[0].is_dead()):
@@ -140,29 +158,25 @@ def main(model_path=None):
             if not model_path:
                 keys = pygame.key.get_pressed()
                 move_x, move_y = 0, 0
+                speed = lt.speed if hasattr(lt, 'speed') else 1.0
 
                 if keys[pygame.K_UP]:
-                    move_y -= lt.speed if hasattr(lt, 'speed') else 1.0
+                    move_y -= speed
                 if keys[pygame.K_DOWN]:
-                    move_y += lt.speed if hasattr(lt, 'speed') else 1.0
+                    move_y += speed
                 if keys[pygame.K_LEFT]:
-                    move_x -= lt.speed if hasattr(lt, 'speed') else 1.0
+                    move_x -= speed
                 if keys[pygame.K_RIGHT]:
-                    move_x += lt.speed if hasattr(lt, 'speed') else 1.0
-
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE and lt.special_ready:
-                        lt.use_special_ability(tissue)
-                        lt.special_ready = False
-                        lt.special_cooldown = lt.special_cooldown_max
+                    move_x += speed
 
                 # Appliquer le mouvement
-                new_x = lt.x + move_x
-                new_y = lt.y + move_y
+                if move_x != 0 or move_y != 0:
+                    new_x = lt.x + move_x
+                    new_y = lt.y + move_y
 
-                if tissue.is_valid_position(new_x, new_y):
-                    lt.x = new_x
-                    lt.y = new_y
+                    if tissue.is_valid_position(new_x, new_y):
+                        lt.x = new_x
+                        lt.y = new_y
 
             # Mise à jour de l'état du jeu
             tissue.update()
@@ -174,7 +188,7 @@ def main(model_path=None):
                 spawn_timer = 0
 
             # Mise à jour des compteurs de survie
-            if not lt.is_dead():
+            if lt in tissue.immune_cells and not lt.is_dead():
                 steps_survived += 1
                 survival_time += 1 / FPS
 
@@ -201,13 +215,24 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Neural Battler")
     parser.add_argument("--model", type=str, default=None,
                         help="Chemin vers le modèle d'IA à utiliser (facultatif)")
+    parser.add_argument("--check-architecture", action="store_true",
+                        help="Vérifier et documenter l'architecture du projet")
 
     args = parser.parse_args()
-    check_and_document_architecture()
+
+    if args.check_architecture:
+        try:
+            from .helper.architecture import check_and_document_architecture
+
+            check_and_document_architecture()
+        except ImportError:
+            print("Module architecture non trouvé. Lancement du jeu sans vérification.")
 
     if args.model:
         print(f"Utilisation du modèle: {args.model}")
     else:
         print("Mode manuel activé (aucun modèle spécifié)")
+        print("Utilisez les flèches directionnelles pour vous déplacer")
+        print("Appuyez sur ESPACE pour utiliser la capacité spéciale")
 
     main(args.model)

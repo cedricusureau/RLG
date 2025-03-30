@@ -1,6 +1,10 @@
 # neural_battler/src/game/world/tissue.py
 import random
 
+import random
+import numpy as np
+from scipy.spatial import cKDTree
+
 from ..entities.immune_cell import ImmuneCell
 from ..entities.pathogen import Pathogen
 
@@ -22,6 +26,10 @@ class Tissue:
         # Facteur de progression de la difficulté
         self.difficulty_factor = 0.98  # Réduire le temps de 2% à chaque spawn
         self.game_time = 0  # Compteur de temps de jeu
+
+        self._update_spatial_index = True
+        self._pathogen_tree = None
+        self._immune_cell_tree = None
 
     def update(self):
         # Mise à jour du compteur de temps
@@ -62,27 +70,79 @@ class Tissue:
             # Logique d'animation...
             pass
 
+        self._update_spatial_index = True
+
     def get_nearby_pathogens(self, x, y, radius):
-        # Retourne les pathogènes à portée
-        nearby = []
-        for pathogen in self.pathogens:
-            dx = pathogen.x - x
-            dy = pathogen.y - y
-            distance = (dx ** 2 + dy ** 2) ** 0.5
-            if distance <= radius:
-                nearby.append(pathogen)
-        return nearby
+        """Retourne les pathogènes à portée en utilisant KDTree pour efficacité"""
+        # Si peu de pathogènes, utiliser la méthode directe
+        if len(self.pathogens) < 10:
+            # Méthode simple originale pour petits nombres
+            nearby = []
+            for pathogen in self.pathogens:
+                dx = pathogen.x - x
+                dy = pathogen.y - y
+                distance = (dx ** 2 + dy ** 2) ** 0.5
+                if distance <= radius:
+                    nearby.append(pathogen)
+            return nearby
+
+        # Pour beaucoup de pathogènes, utiliser KDTree
+        try:
+            # Recalculer l'arbre KD seulement si nécessaire
+            if self._update_spatial_index or self._pathogen_tree is None:
+                positions = np.array([[p.x, p.y] for p in self.pathogens])
+                self._pathogen_tree = cKDTree(positions)
+
+            # Trouver les indices des pathogènes proches
+            indices = self._pathogen_tree.query_ball_point([x, y], radius)
+            return [self.pathogens[i] for i in indices]
+
+        except (ValueError, ImportError) as e:
+            # Fallback en cas d'erreur avec la méthode optimisée
+            print(f"Erreur avec KDTree: {e}, utilisation de la méthode standard")
+            # Utiliser la méthode originale comme fallback
+            nearby = []
+            for pathogen in self.pathogens:
+                dx = pathogen.x - x
+                dy = pathogen.y - y
+                distance = (dx ** 2 + dy ** 2) ** 0.5
+                if distance <= radius:
+                    nearby.append(pathogen)
+            return nearby
 
     def get_nearby_immune_cells(self, x, y, radius):
-        # Retourne les cellules immunitaires à portée
-        nearby = []
-        for cell in self.immune_cells:
-            dx = cell.x - x
-            dy = cell.y - y
-            distance = (dx ** 2 + dy ** 2) ** 0.5
-            if distance <= radius:
-                nearby.append(cell)
-        return nearby
+        """Retourne les cellules immunitaires à portée en utilisant KDTree pour efficacité"""
+        # Même logique que pour get_nearby_pathogens
+        if len(self.immune_cells) < 10:
+            # Méthode originale comme fallback
+            nearby = []
+            for cell in self.immune_cells:
+                dx = cell.x - x
+                dy = cell.y - y
+                distance = (dx ** 2 + dy ** 2) ** 0.5
+                if distance <= radius:
+                    nearby.append(cell)
+            return nearby
+
+        # Pour plusieurs cellules, utiliser KDTree
+        try:
+            if self._update_spatial_index or self._immune_cell_tree is None:
+                positions = np.array([[c.x, c.y] for c in self.immune_cells])
+                self._immune_cell_tree = cKDTree(positions)
+
+            indices = self._immune_cell_tree.query_ball_point([x, y], radius)
+            return [self.immune_cells[i] for i in indices]
+
+        except (ValueError, ImportError) as e:
+            # Fallback
+            nearby = []
+            for cell in self.immune_cells:
+                dx = cell.x - x
+                dy = cell.y - y
+                distance = (dx ** 2 + dy ** 2) ** 0.5
+                if distance <= radius:
+                    nearby.append(cell)
+            return nearby
 
     def add_immune_cell(self, x, y, cell_type="t_cell", ai_model_path=None):
         cell = ImmuneCell(x, y, cell_type, ai_model_path)

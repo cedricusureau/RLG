@@ -7,7 +7,7 @@ from ..models import ImmuneCellAgent
 class TrainingEnvironment:
     """Environnement d'entraînement pour un agent lymphocyte par renforcement"""
 
-    def __init__(self, width=800, height=600, max_steps=1000):
+    def __init__(self, width=800, height=600, max_steps=30000):
         self.width = width
         self.height = height
         self.max_steps = max_steps
@@ -158,23 +158,26 @@ class TrainingEnvironment:
             self.immune_cell.y += (dir_y / dist) * force
 
     def _calculate_reward(self, prev_health, prev_num_pathogens, dx, dy):
-        """Calcule la récompense basée sur plusieurs facteurs"""
+        """Calcule la récompense basée sur la survie et l'évitement des menaces"""
         reward = 0.0
 
-        # 1. Récompense pour la survie qui augmente avec le temps
-        survival_reward = 0.1 * (1 + self.current_step / 200)  # Augmente progressivement
-        reward += survival_reward
+        # 1. Récompense de base pour la survie
+        reward += 0.1  # Petite récompense constante par étape de survie
 
-        # 2. Récompense/pénalité pour changement de santé (plus forte)
+        # 2. Bonus pour survie prolongée (encourage les longues durées de vie)
+        if self.current_step > 1000:
+            reward += 0.2
+        if self.current_step > 3000:
+            reward += 0.3
+        if self.current_step > 5000:
+            reward += 0.5
+
+        # 3. Pénalité pour les dégâts subis (importante)
         health_diff = self.immune_cell.health - prev_health
-        reward += health_diff * 0.3  # Augmenté de 0.1 à 0.3
+        if health_diff < 0:
+            reward += health_diff * 0.5  # Forte pénalité pour perte de santé
 
-        # 3. Récompense pour avoir éliminé des pathogènes
-        pathogens_eliminated = prev_num_pathogens - len(self.tissue.pathogens)
-        if pathogens_eliminated > 0:
-            reward += pathogens_eliminated * 2.0  # Bonne récompense pour éliminer des pathogènes
-
-        # 4. Pénalité pour être près d'un mur
+        # 4. Pénalité pour être trop près d'un mur (risque de se faire piéger)
         if self._is_near_wall():
             # Distance au mur le plus proche
             wall_dist = min(
@@ -183,69 +186,9 @@ class TrainingEnvironment:
                 self.immune_cell.y,
                 self.height - self.immune_cell.y
             )
-            # Pénalité qui augmente à mesure qu'on s'approche du mur
-            wall_penalty = 0.8 * (1 - (wall_dist / 60))  # Augmenté de 0.5 à 0.8
-            reward -= wall_penalty
-
-            # Pénalité plus sévère pour immobilité près des murs
-            if abs(dx) < 0.1 and abs(dy) < 0.1:
-                reward -= 1.5  # Augmenté de 1.0 à 1.5
-
-            # Récompense pour mouvement vers le centre quand près d'un mur
-            dir_to_center_x = self.center_x - self.immune_cell.x
-            dir_to_center_y = self.center_y - self.immune_cell.y
-            center_dist = np.sqrt(dir_to_center_x ** 2 + dir_to_center_y ** 2)
-
-            if center_dist > 0:
-                # Vérifier si le mouvement est orienté vers le centre
-                dot_product = (dx * dir_to_center_x + dy * dir_to_center_y) / center_dist
-                if dot_product > 0:  # Si le mouvement est vers le centre
-                    reward += 1.5 * dot_product  # Augmenté de 1.0 à 1.5
-
-        # 5. Récompense pour éviter activement les pathogènes
-        if self.tissue.pathogens:
-            # Trouver le pathogène le plus proche
-            min_distance = float('inf')
-            closest_pathogen = None
-
-            for pathogen in self.tissue.pathogens:
-                dist = np.sqrt((pathogen.x - self.immune_cell.x) ** 2 + (pathogen.y - self.immune_cell.y) ** 2)
-                if dist < min_distance:
-                    min_distance = dist
-                    closest_pathogen = pathogen
-
-            # Récompense pour maintenir une distance de sécurité
-            safe_distance = 120  # Augmenté de 100 à 120
-            if min_distance < safe_distance:
-                # Récompense proportionnelle à la distance
-                reward += 0.3 * (min_distance / safe_distance)  # Augmenté de 0.2 à 0.3
-            else:
-                reward += 0.3  # Récompense complète si à distance sûre
-
-            # Récompense pour s'éloigner activement des pathogènes proches
-            if closest_pathogen and min_distance < 100:
-                # Direction de fuite
-                flee_dir_x = self.immune_cell.x - closest_pathogen.x
-                flee_dir_y = self.immune_cell.y - closest_pathogen.y
-                flee_dist = np.sqrt(flee_dir_x ** 2 + flee_dir_y ** 2)
-
-                if flee_dist > 0:
-                    # Vérifier si le mouvement s'éloigne du pathogène
-                    flee_dot_product = (dx * flee_dir_x + dy * flee_dir_y) / flee_dist
-                    if flee_dot_product > 0:  # Si le mouvement est en direction opposée au pathogène
-                        reward += 1.0 * flee_dot_product  # Récompense pour la fuite active
-
-        # 6. Pénalité progressive si bloqué contre un mur
-        if self.wall_stuck_counter > 0:
-            reward -= 0.8 * self.wall_stuck_counter  # Augmenté de 0.5 à 0.8
-
-        # 7. Forte pénalité si mort
-        if self.immune_cell.is_dead():
-            reward -= 15.0  # Augmenté de 10.0 à 15.0
-
-        # 8. Bonus pour survie exceptionnelle
-        if self.current_step > 500:
-            reward += 0.5  # Bonus supplémentaire pour survie prolongée
+            # Pénalité simple lorsqu'on est trop près
+            if wall_dist < 30:
+                reward -= 0.5
 
         return reward
 

@@ -66,7 +66,7 @@ def main():
             episodes=args.episodes,
             batch_size=args.batch_size,
             save_interval=args.save_interval,
-            model_path=args.model
+            model_path=args.model,
         )
 
         print(f"Training complete! Model saved to: {model_path}")

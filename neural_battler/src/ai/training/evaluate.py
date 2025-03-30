@@ -8,7 +8,7 @@ from tqdm import tqdm
 from .environment import TrainingEnvironment
 from ..inference.immune_cell_controller import ImmuneCellController
 
-def evaluate_model(model_path, num_episodes=50, max_steps=1000, render=False):
+def evaluate_model(model_path, num_episodes=50, max_steps=30000, render=False):
     """
     Évalue un modèle entraîné sur plusieurs épisodes
     """

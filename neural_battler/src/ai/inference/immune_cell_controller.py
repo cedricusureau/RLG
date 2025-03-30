@@ -4,7 +4,7 @@ from ..models import ImmuneCellAgent
 
 
 class ImmuneCellController:
-    def __init__(self, model_path, state_size=23, action_size=9):
+    def __init__(self, model_path, state_size=24, action_size=10):
         """
         Contrôleur qui utilise un modèle entraîné pour diriger un lymphocyte
         """
@@ -29,7 +29,7 @@ class ImmuneCellController:
         """
         Met à jour le comportement du lymphocyte en fonction du modèle
         """
-        state = self._get_state(immune_cell, pathogens, tissue.width, tissue.height)
+        state = self.agent.get_state(immune_cell, pathogens, tissue.width, tissue.height)
         with torch.no_grad():
             q_values = self.agent.policy_network(state)
             action_idx = torch.argmax(q_values).item()

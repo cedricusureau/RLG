@@ -1,5 +1,8 @@
 import numpy as np
 import random
+
+from sympy.physics.units import action
+
 from ...game.world.tissue import Tissue
 from ..models import ImmuneCellAgent
 
@@ -16,7 +19,7 @@ class TrainingEnvironment:
         self.immune_cell = None
         self.default_speed = 1.0
         self.wall_stuck_counter = 0
-        self.helper_agent = ImmuneCellAgent(23, 9)
+        self.helper_agent = ImmuneCellAgent(24, 10)
         self.center_x = width / 2
         self.center_y = height / 2
         self.reset()

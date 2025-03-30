@@ -13,10 +13,10 @@ def train_immune_cell(episodes=1000, batch_size=64, save_interval=100, model_pat
     """
     Entraîne un agent de lymphocyte par reinforcement learning
     """
-    # Taille de l'état: position (2) + 5 pathogènes (5*4=20) + santé (1) = 23
-    state_size = 23
+    # Taille de l'état: position (2) + 5 pathogènes (5*4=20) + santé (1) = 24
+    state_size = 24
     # Taille de l'action: 8 directions + immobile = 9
-    action_size = 9
+    action_size = 10
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_id = f"run_{timestamp}"

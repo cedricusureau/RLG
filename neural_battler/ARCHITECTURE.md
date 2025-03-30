@@ -1,6 +1,6 @@
 # Architecture du projet Neural Battler
 
-*Document généré automatiquement le 30/03/2025 à 19:45:05*
+*Document généré automatiquement le 30/03/2025 à 20:17:39*
 
 ## Structure des fichiers
 
@@ -20,22 +20,8 @@
     └── game_config.json
 ├── data/
     ├── neural_networks/
-        ├── immune_cell_model_ep100.pt
-        ├── immune_cell_model_ep200.pt
-        ├── immune_cell_model_ep300.pt
-        ├── immune_cell_model_ep400.pt
-        ├── immune_cell_model_run_20250330_185106_ep100.pt
-        ├── immune_cell_model_run_20250330_185106_ep200.pt
-        ├── immune_cell_model_run_20250330_185106_ep300.pt
-        ├── immune_cell_model_run_20250330_185106_ep400.pt
-        ├── immune_cell_model_run_20250330_185106_ep500.pt
-        ├── immune_cell_model_run_20250330_185106_final.pt
-        ├── immune_cell_model_run_20250330_190000_ep100.pt
-        ├── immune_cell_model_run_20250330_190000_ep200.pt
-        ├── immune_cell_model_run_20250330_190000_ep300.pt
-        ├── immune_cell_model_run_20250330_190000_ep400.pt
-        ├── immune_cell_model_run_20250330_190000_ep500.pt
-        └── immune_cell_model_run_20250330_190000_final.pt
+        ├── immune_cell_model_run_20250330_200817_ep100.pt
+        └── immune_cell_model_run_20250330_200817_ep200.pt
     ├── stats/
         ├── training_performance.png
         ├── training_performance_run_20250330_185106.png

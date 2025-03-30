@@ -77,8 +77,6 @@ class ImmuneCellAgent:
             # Aucun pathogène, remplir avec des zéros
             pathogen_info = [0.0] * 20  # 5 pathogènes * 4 informations
 
-        # Santé relative du lymphocyte
-        health_info = [immune_cell.health / immune_cell.max_health]
 
         # Santé relative du lymphocyte et état de la capacité spéciale
         health_info = [immune_cell.health / immune_cell.max_health]
@@ -116,7 +114,8 @@ class ImmuneCellAgent:
             (0.7, 0.7),  # bas-droite
             (-0.7, 0.7),  # bas-gauche
             (-0.7, -0.7),  # haut-gauche
-            (0, 0)  # immobile
+            (0, 0),
+            (0,0 )
         ]
 
         dx, dy = movements[action]

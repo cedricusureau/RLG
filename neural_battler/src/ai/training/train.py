@@ -31,9 +31,9 @@ def train_immune_cell(episodes=1000, batch_size=64, save_interval=10, model_path
         agent.load(model_path)
 
     # Paramètres d'entraînement
-    epsilon = 1.0  # Taux d'exploration initial
-    epsilon_min = 0.01  # Taux d'exploration minimal
-    epsilon_decay = 0.995  # Taux de décroissance de l'exploration
+    epsilon = 1.0  # Taux d'exploration initial (garder à 1.0)
+    epsilon_min = 0.5  # Augmenter le minimum (0.01 → 0.1)
+    epsilon_decay = 0.9999  # Ralentir la décroissance (0.995 → 0.999)
 
     # Suivi des performances
     episode_rewards = []
@@ -45,6 +45,17 @@ def train_immune_cell(episodes=1000, batch_size=64, save_interval=10, model_path
         state = env.reset()
         total_reward = 0
         episode_loss = []
+
+        import random  # Ajoutez cet import si nécessaire
+        for i in range(10):  # Les 10 premières étapes sont aléatoires
+            action = random.randint(0, action_size - 1)
+            next_state, reward, done = env.step(action)
+            total_reward += reward
+            state = next_state
+
+            # Si l'épisode se termine prématurément pendant ces actions aléatoires
+            if done:
+                break
 
         # Décroissance du taux d'exploration
         epsilon = max(epsilon_min, epsilon * epsilon_decay)
@@ -90,6 +101,14 @@ def train_immune_cell(episodes=1000, batch_size=64, save_interval=10, model_path
             # Afficher les métriques actuelles
             print(f"Épisode {episode + 1}/{episodes}, Récompense moyenne: {np.mean(episode_rewards[-100:]):.2f}")
 
+        # Dans la boucle d'entraînement, juste après done = False
+        episode_actions = [0] * action_size  # Pour compter les actions choisies
+
+        # Dans la boucle while not done, après avoir sélectionné une action
+        episode_actions[action] += 1
+
+
+
     # Sauvegarder le modèle final
     final_path = os.path.join("data", "neural_networks", f"immune_cell_model_{run_id}_final.pt")
     agent.save(final_path)
@@ -129,7 +148,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Entraînement d'un agent de lymphocyte par RL")
     parser.add_argument("--episodes", type=int, default=1000, help="Nombre d'épisodes d'entraînement")
     parser.add_argument("--batch-size", type=int, default=64, help="Taille du batch pour l'entraînement")
-    parser.add_argument("--save-interval", type=int, default=100, help="Intervalle de sauvegarde du modèle")
+    parser.add_argument("--save-interval", type=int, default=10, help="Intervalle de sauvegarde du modèle")
     parser.add_argument("--model", type=str, default=None, help="Chemin vers un modèle existant à poursuivre")
 
     args = parser.parse_args()

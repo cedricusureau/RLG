@@ -1,6 +1,6 @@
 # Architecture du projet Neural Battler
 
-*Document généré automatiquement le 31/03/2025 à 13:53:29*
+*Document généré automatiquement le 31/03/2025 à 16:02:21*
 
 ## Structure des fichiers
 
@@ -20,29 +20,37 @@
     └── game_config.json
 ├── data/
     ├── neural_networks/
-        ├── immune_cell_model_run_20250330_200817_ep100.pt
-        ├── immune_cell_model_run_20250330_200817_ep200.pt
-        ├── immune_cell_model_run_20250330_200817_ep300.pt
-        ├── immune_cell_model_run_20250330_200817_ep400.pt
-        ├── immune_cell_model_run_20250330_202241_ep100.pt
-        ├── immune_cell_model_run_20250330_202241_ep200.pt
-        ├── immune_cell_model_run_20250331_091213_ep100.pt
-        ├── immune_cell_model_run_20250331_091213_ep200.pt
-        ├── immune_cell_model_run_20250331_091213_ep300.pt
-        ├── immune_cell_model_run_20250331_091213_ep400.pt
-        ├── immune_cell_model_run_20250331_120053_ep100.pt
-        ├── immune_cell_model_run_20250331_120053_ep200.pt
-        ├── immune_cell_model_run_20250331_130015_ep100.pt
-        ├── immune_cell_model_run_20250331_130015_ep200.pt
-        ├── immune_cell_model_run_20250331_130015_ep300.pt
-        ├── immune_cell_model_run_20250331_130015_ep400.pt
-        ├── immune_cell_model_run_20250331_130015_ep500.pt
-        └── immune_cell_model_run_20250331_130015_final.pt
+        ├── immune_cell_model_run_20250331_153029_ep10.pt
+        ├── immune_cell_model_run_20250331_153029_ep100.pt
+        ├── immune_cell_model_run_20250331_153029_ep110.pt
+        ├── immune_cell_model_run_20250331_153029_ep120.pt
+        ├── immune_cell_model_run_20250331_153029_ep130.pt
+        ├── immune_cell_model_run_20250331_153029_ep140.pt
+        ├── immune_cell_model_run_20250331_153029_ep150.pt
+        ├── immune_cell_model_run_20250331_153029_ep160.pt
+        ├── immune_cell_model_run_20250331_153029_ep170.pt
+        ├── immune_cell_model_run_20250331_153029_ep180.pt
+        ├── immune_cell_model_run_20250331_153029_ep190.pt
+        ├── immune_cell_model_run_20250331_153029_ep20.pt
+        ├── immune_cell_model_run_20250331_153029_ep200.pt
+        ├── immune_cell_model_run_20250331_153029_ep30.pt
+        ├── immune_cell_model_run_20250331_153029_ep40.pt
+        ├── immune_cell_model_run_20250331_153029_ep50.pt
+        ├── immune_cell_model_run_20250331_153029_ep60.pt
+        ├── immune_cell_model_run_20250331_153029_ep70.pt
+        ├── immune_cell_model_run_20250331_153029_ep80.pt
+        ├── immune_cell_model_run_20250331_153029_ep90.pt
+        └── immune_cell_model_run_20250331_153029_final.pt
     ├── stats/
         ├── training_performance.png
         ├── training_performance_run_20250330_185106.png
         ├── training_performance_run_20250330_190000.png
-        └── training_performance_run_20250331_130015.png
+        ├── training_performance_run_20250331_130015.png
+        ├── training_performance_run_20250331_150157.png
+        ├── training_performance_run_20250331_150910.png
+        ├── training_performance_run_20250331_151422.png
+        ├── training_performance_run_20250331_151912.png
+        └── training_performance_run_20250331_153029.png
 ├── docs/
 ├── src/
     ├── __init__.py

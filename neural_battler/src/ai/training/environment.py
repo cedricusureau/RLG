@@ -33,6 +33,8 @@ class TrainingEnvironment:
         # Placer le lymphocyte au centre
         self.immune_cell = self.tissue.add_immune_cell(self.center_x, self.center_y, "t_cell")
 
+        self.prev_special_ready = True if hasattr(self.immune_cell, 'special_ready') else False
+
         # Position précédente pour calculer les mouvements
         self.prev_pos_x = self.center_x
         self.prev_pos_y = self.center_y
@@ -75,15 +77,6 @@ class TrainingEnvironment:
         self.tissue.update()
         self.current_step += 1
 
-        # Vérifier si l'agent est bloqué contre un mur
-        if self._is_near_wall():
-            if abs(self.immune_cell.x - prev_pos_x) < 0.1 and abs(self.immune_cell.y - prev_pos_y) < 0.1:
-                self.wall_stuck_counter += 1
-            else:
-                self.wall_stuck_counter = 0
-        else:
-            self.wall_stuck_counter = 0
-
         # Spawn de pathogènes près des murs avec probabilité réduite
         if self._is_near_wall() and random.random() < 0.05:
             self._spawn_pathogen_near_wall()
@@ -94,16 +87,12 @@ class TrainingEnvironment:
         # Vérifier la condition de fin
         done = (
                 self.immune_cell.is_dead() or
-                self.current_step >= self.max_steps or
-                self.wall_stuck_counter >= 20  # Terminer l'épisode si bloqué trop longtemps
+                self.current_step >= self.max_steps
         )
 
         # Respawn des pathogènes si tous sont éliminés
         if len(self.tissue.pathogens) == 0:
-            reward += 5.0  # Bonus pour avoir éliminé tous les pathogènes
-            for _ in range(random.randint(3, 5)):
-                self._spawn_random_pathogen()
-
+            self._spawn_random_pathogen()
 
         return self._get_state(), reward, done
 
@@ -162,17 +151,43 @@ class TrainingEnvironment:
             self.immune_cell.y += (dir_y / dist) * force
 
     def _calculate_reward(self, prev_health, prev_num_pathogens, dx, dy):
-        """Calcule la récompense basée uniquement sur le temps total de survie"""
+        reward = 0.0
 
-        # Si l'épisode se termine (lymphocyte mort ou limite de temps atteinte)
-        if self.immune_cell.is_dead() or self.current_step >= self.max_steps:
-            # Récompense finale proportionnelle au temps total de survie
-            # Convertir les étapes en secondes (en supposant 60 FPS)
-            survival_time_seconds = self.current_step / 60.0
-            return survival_time_seconds  # Récompense = temps de survie en secondes
+        # Récompense principale: pénalité pour perte de vie
+        health_change = self.immune_cell.health - prev_health
+        if health_change < 0:
+            return -1.0  # Forte pénalité fixe pour toute perte de vie
 
-        # Pendant l'épisode, récompense = 0 pour toutes les étapes sauf la dernière
-        return 0.0
+        # Bonus pour l'élimination de pathogènes
+        pathogen_change = prev_num_pathogens - len(self.tissue.pathogens)
+        if pathogen_change > 0:
+            return 1.0  # Bonus fixe pour avoir éliminé un pathogène
+
+        # Petite récompense pour le mouvement
+        if abs(dx) > 0.1 or abs(dy) > 0.1:
+            return 0.1
+
+        return 0.0  # Récompense neutre par défaut
+
+    def _is_moving_away_from_walls(self, dx, dy):
+        """Vérifie si le mouvement éloigne la cellule des murs"""
+        # Calculer la distance aux murs avant et après le mouvement
+        wall_dist_before = min(
+            self.immune_cell.x,  # Distance au mur gauche
+            self.width - self.immune_cell.x,  # Distance au mur droit
+            self.immune_cell.y,  # Distance au mur supérieur
+            self.height - self.immune_cell.y  # Distance au mur inférieur
+        )
+
+        wall_dist_after = min(
+            self.immune_cell.x + dx,  # Nouvelle distance au mur gauche
+            self.width - (self.immune_cell.x + dx),  # Nouvelle distance au mur droit
+            self.immune_cell.y + dy,  # Nouvelle distance au mur supérieur
+            self.height - (self.immune_cell.y + dy)  # Nouvelle distance au mur inférieur
+        )
+
+        # Retourne True si la nouvelle position est plus éloignée des murs
+        return wall_dist_after > wall_dist_before
 
     def render(self):
         """Version simplifiée du rendu pour débogage"""

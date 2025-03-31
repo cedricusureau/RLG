@@ -12,6 +12,11 @@ class ImmuneCellNetwork(nn.Module):
         self.fc2 = nn.Linear(hidden_size, hidden_size)
         self.fc3 = nn.Linear(hidden_size, output_size)
 
+        # Initialisation explicite des poids
+        nn.init.xavier_uniform_(self.fc1.weight)
+        nn.init.xavier_uniform_(self.fc2.weight)
+        nn.init.xavier_uniform_(self.fc3.weight)
+
     def forward(self, x):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
@@ -41,13 +46,18 @@ class ImmuneCellAgent:
         self.gamma = 0.99  # Facteur de remise pour les récompenses futures
 
     def get_state(self, immune_cell, pathogens, tissue_width, tissue_height):
-        """
-        Convertit l'état du jeu en entrée pour le réseau de neurones
-        """
         # Position normalisée du lymphocyte (entre 0 et 1)
         cell_pos = [immune_cell.x / tissue_width, immune_cell.y / tissue_height]
 
-        # Informations sur les pathogènes proches (au maximum 5 les plus proches)
+        # Informations sur la distance aux murs
+        wall_distances = [
+            immune_cell.x / tissue_width,
+            (tissue_width - immune_cell.x) / tissue_width,
+            immune_cell.y / tissue_height,
+            (tissue_height - immune_cell.y) / tissue_height
+        ]
+
+        # Informations sur les pathogènes proches
         pathogen_info = []
 
         if pathogens:
@@ -77,21 +87,6 @@ class ImmuneCellAgent:
             # Aucun pathogène, remplir avec des zéros
             pathogen_info = [0.0] * 20  # 5 pathogènes * 4 informations
 
-        # Position normalisée du lymphocyte (entre 0 et 1)
-        cell_pos = [immune_cell.x / tissue_width, immune_cell.y / tissue_height]
-
-        # NOUVEAU: Informations sur la distance aux murs (normalisation entre 0 et 1)
-        # Plus la valeur est proche de 0, plus le mur est proche
-        wall_distances = [
-            immune_cell.x / tissue_width,  # Distance au mur gauche (normalisée)
-            (tissue_width - immune_cell.x) / tissue_width,  # Distance au mur droit (normalisée)
-            immune_cell.y / tissue_height,  # Distance au mur haut (normalisée)
-            (tissue_height - immune_cell.y) / tissue_height  # Distance au mur bas (normalisée)
-        ]
-
-        # Informations sur les pathogènes proches (au maximum 5 les plus proches)
-        pathogen_info = []
-
         # Santé relative du lymphocyte et état de la capacité spéciale
         health_info = [immune_cell.health / immune_cell.max_health]
         special_ready = [1.0 if immune_cell.special_ready else 0.0]
@@ -101,17 +96,19 @@ class ImmuneCellAgent:
         return torch.FloatTensor(state)
 
     def select_action(self, state, epsilon=0.1):
-        """
-        Sélectionne une action selon la politique epsilon-greedy
-        """
-        if np.random.random() < epsilon:
+        # Ajoutez ce debug pour voir ce qui se passe
+        random_val = np.random.random()
+
+        if random_val < epsilon:
             # Exploration: action aléatoire
-            return torch.randint(0, self.action_size, (1,)).item()
+            action = torch.randint(0, self.action_size, (1,)).item()
+            return action
         else:
             # Exploitation: meilleure action selon le réseau
             with torch.no_grad():
                 q_values = self.policy_network(state)
-                return torch.argmax(q_values).item()
+                action = torch.argmax(q_values).item()
+                return action
 
     def action_to_movement(self, action, speed=1.0):
         """

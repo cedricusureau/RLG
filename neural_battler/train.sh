@@ -13,5 +13,11 @@ module load anaconda3/2021.05/gcc-9.2.0
 # Activer l'environnement Anaconda
 source activate cedric_bs
 
-# Lancer l'entraînement avec 3000 épisodes
-python -m neural_battler.train_all train --episodes 3000 --batch-size 128 --save-interval 100
+# Chemin absolu vers votre projet (corrigé)
+PROJECT_DIR="/gpfs/workdir/usureauc/RLG/neural_battler"
+
+# Se déplacer dans le répertoire du projet
+cd $PROJECT_DIR
+
+# Lancer l'entraînement directement avec le script Python
+python $PROJECT_DIR/train_all.py train --episodes 3000 --batch-size 128 --save-interval 100

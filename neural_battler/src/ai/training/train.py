@@ -9,12 +9,12 @@ from ..models import ImmuneCellAgent
 from .environment import TrainingEnvironment  # Import direct depuis le module
 from datetime import datetime
 
-def train_immune_cell(episodes=1000, batch_size=64, save_interval=100, model_path=None):
+def train_immune_cell(episodes=1000, batch_size=64, save_interval=10, model_path=None):
     """
     Entraîne un agent de lymphocyte par reinforcement learning
     """
-    # Taille de l'état: position (2) + 5 pathogènes (5*4=20) + santé (1) = 24
-    state_size = 24
+    # Taille de l'état: position (2) + 5 pathogènes (5*4=20) + santé (1) = 28
+    state_size = 28
     # Taille de l'action: 8 directions + immobile = 9
     action_size = 10
 

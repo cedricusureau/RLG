@@ -77,13 +77,27 @@ class ImmuneCellAgent:
             # Aucun pathogène, remplir avec des zéros
             pathogen_info = [0.0] * 20  # 5 pathogènes * 4 informations
 
+        # Position normalisée du lymphocyte (entre 0 et 1)
+        cell_pos = [immune_cell.x / tissue_width, immune_cell.y / tissue_height]
+
+        # NOUVEAU: Informations sur la distance aux murs (normalisation entre 0 et 1)
+        # Plus la valeur est proche de 0, plus le mur est proche
+        wall_distances = [
+            immune_cell.x / tissue_width,  # Distance au mur gauche (normalisée)
+            (tissue_width - immune_cell.x) / tissue_width,  # Distance au mur droit (normalisée)
+            immune_cell.y / tissue_height,  # Distance au mur haut (normalisée)
+            (tissue_height - immune_cell.y) / tissue_height  # Distance au mur bas (normalisée)
+        ]
+
+        # Informations sur les pathogènes proches (au maximum 5 les plus proches)
+        pathogen_info = []
 
         # Santé relative du lymphocyte et état de la capacité spéciale
         health_info = [immune_cell.health / immune_cell.max_health]
         special_ready = [1.0 if immune_cell.special_ready else 0.0]
 
         # Combinaison de toutes les informations
-        state = cell_pos + pathogen_info + health_info + special_ready
+        state = cell_pos + wall_distances + pathogen_info + health_info + special_ready
         return torch.FloatTensor(state)
 
     def select_action(self, state, epsilon=0.1):

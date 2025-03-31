@@ -10,7 +10,7 @@ from ..models import ImmuneCellAgent
 class TrainingEnvironment:
     """Environnement d'entraînement pour un agent lymphocyte par renforcement"""
 
-    def __init__(self, width=800, height=600, max_steps=30000):
+    def __init__(self, width=800, height=600, max_steps=3000):
         self.width = width
         self.height = height
         self.max_steps = max_steps
@@ -19,7 +19,7 @@ class TrainingEnvironment:
         self.immune_cell = None
         self.default_speed = 1.0
         self.wall_stuck_counter = 0
-        self.helper_agent = ImmuneCellAgent(24, 10)
+        self.helper_agent = ImmuneCellAgent(28, 10)
         self.center_x = width / 2
         self.center_y = height / 2
         self.reset()
@@ -104,26 +104,6 @@ class TrainingEnvironment:
             for _ in range(random.randint(3, 5)):
                 self._spawn_random_pathogen()
 
-        # Vérifier si l'action choisie est d'utiliser l'attaque spéciale (action 9)
-        used_special = (action == 9)
-
-        # Si l'attaque spéciale est utilisée et qu'elle est disponible
-        if used_special and self.immune_cell.special_ready:
-            # Utiliser l'attaque spéciale
-            pathogens_before = len(self.tissue.pathogens)
-            self.immune_cell.use_special_ability(self.tissue)
-            self.immune_cell.special_ready = False
-            self.immune_cell.special_cooldown = self.immune_cell.special_cooldown_max
-
-            # Compter combien de pathogènes ont été affectés/tués
-            pathogens_after = len(self.tissue.pathogens)
-            pathogens_affected = pathogens_before - pathogens_after
-
-            # Ajouter une récompense pour l'utilisation efficace de l'attaque spéciale
-            if pathogens_affected > 0:
-                reward += pathogens_affected * 2.0  # Forte récompense pour chaque pathogène touché
-            else:
-                reward -= 0.5  # Légère pénalité pour utilisation inefficace
 
         return self._get_state(), reward, done
 
@@ -182,51 +162,17 @@ class TrainingEnvironment:
             self.immune_cell.y += (dir_y / dist) * force
 
     def _calculate_reward(self, prev_health, prev_num_pathogens, dx, dy):
-        """Calcule la récompense basée sur la survie et l'évitement des menaces"""
-        reward = 0.0
+        """Calcule la récompense basée uniquement sur le temps total de survie"""
 
-        # 1. Récompense de base pour la survie
-        reward += 0.1  # Petite récompense constante par étape de survie
+        # Si l'épisode se termine (lymphocyte mort ou limite de temps atteinte)
+        if self.immune_cell.is_dead() or self.current_step >= self.max_steps:
+            # Récompense finale proportionnelle au temps total de survie
+            # Convertir les étapes en secondes (en supposant 60 FPS)
+            survival_time_seconds = self.current_step / 60.0
+            return survival_time_seconds  # Récompense = temps de survie en secondes
 
-        # 2. Bonus pour survie prolongée (encourage les longues durées de vie)
-        if self.current_step > 1000:
-            reward += 0.2
-        if self.current_step > 3000:
-            reward += 0.3
-        if self.current_step > 5000:
-            reward += 0.5
-
-        # 3. Pénalité pour les dégâts subis (importante)
-        health_diff = self.immune_cell.health - prev_health
-        if health_diff < 0:
-            reward += health_diff * 0.5  # Forte pénalité pour perte de santé
-
-        # 4. Pénalité pour être trop près d'un mur (risque de se faire piéger)
-        if self._is_near_wall():
-            # Distance au mur le plus proche
-            wall_dist = min(
-                self.immune_cell.x,
-                self.width - self.immune_cell.x,
-                self.immune_cell.y,
-                self.height - self.immune_cell.y
-            )
-            # Pénalité simple lorsqu'on est trop près
-            if wall_dist < 30:
-                reward -= 0.5
-
-        # 5. Bonus pour l'élimination des pathogènes
-        pathogens_killed = prev_num_pathogens - len(self.tissue.pathogens)
-        if pathogens_killed > 0:
-            reward += pathogens_killed * 1.0  # Récompense pour chaque pathogène éliminé
-
-        # 6. Incitation à utiliser l'attaque spéciale quand plusieurs pathogènes sont proches
-        if self.immune_cell.special_ready:
-            nearby_pathogens = len(self.tissue.get_nearby_pathogens(
-                self.immune_cell.x, self.immune_cell.y, 100))  # Rayon de 100 unités
-            if nearby_pathogens >= 3:  # Si 3+ pathogènes sont proches
-                reward += 0.3  # Incitation à considérer l'attaque spéciale
-
-        return reward
+        # Pendant l'épisode, récompense = 0 pour toutes les étapes sauf la dernière
+        return 0.0
 
     def render(self):
         """Version simplifiée du rendu pour débogage"""

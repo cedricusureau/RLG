@@ -1,6 +1,6 @@
 # Architecture du projet Neural Battler
 
-*Document généré automatiquement le 30/03/2025 à 20:19:14*
+*Document généré automatiquement le 31/03/2025 à 13:53:29*
 
 ## Structure des fichiers
 
@@ -22,11 +22,27 @@
     ├── neural_networks/
         ├── immune_cell_model_run_20250330_200817_ep100.pt
         ├── immune_cell_model_run_20250330_200817_ep200.pt
-        └── immune_cell_model_run_20250330_200817_ep300.pt
+        ├── immune_cell_model_run_20250330_200817_ep300.pt
+        ├── immune_cell_model_run_20250330_200817_ep400.pt
+        ├── immune_cell_model_run_20250330_202241_ep100.pt
+        ├── immune_cell_model_run_20250330_202241_ep200.pt
+        ├── immune_cell_model_run_20250331_091213_ep100.pt
+        ├── immune_cell_model_run_20250331_091213_ep200.pt
+        ├── immune_cell_model_run_20250331_091213_ep300.pt
+        ├── immune_cell_model_run_20250331_091213_ep400.pt
+        ├── immune_cell_model_run_20250331_120053_ep100.pt
+        ├── immune_cell_model_run_20250331_120053_ep200.pt
+        ├── immune_cell_model_run_20250331_130015_ep100.pt
+        ├── immune_cell_model_run_20250331_130015_ep200.pt
+        ├── immune_cell_model_run_20250331_130015_ep300.pt
+        ├── immune_cell_model_run_20250331_130015_ep400.pt
+        ├── immune_cell_model_run_20250331_130015_ep500.pt
+        └── immune_cell_model_run_20250331_130015_final.pt
     ├── stats/
         ├── training_performance.png
         ├── training_performance_run_20250330_185106.png
-        └── training_performance_run_20250330_190000.png
+        ├── training_performance_run_20250330_190000.png
+        └── training_performance_run_20250331_130015.png
 ├── docs/
 ├── src/
     ├── __init__.py

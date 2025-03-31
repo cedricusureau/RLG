@@ -4,7 +4,7 @@ from ..models import ImmuneCellAgent
 
 
 class ImmuneCellController:
-    def __init__(self, model_path, state_size=24, action_size=10):
+    def __init__(self, model_path, state_size=28, action_size=10):
         """
         Contrôleur qui utilise un modèle entraîné pour diriger un lymphocyte
         """

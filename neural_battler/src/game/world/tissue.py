@@ -24,7 +24,7 @@ class Tissue:
         self.pathogen_spawn_cooldown = self.pathogen_spawn_timer
 
         # Facteur de progression de la difficulté
-        self.difficulty_factor = 0.98  # Réduire le temps de 2% à chaque spawn
+        self.difficulty_factor = 1  # Réduire le temps de 2% à chaque spawn
         self.game_time = 0  # Compteur de temps de jeu
 
         self._update_spatial_index = True

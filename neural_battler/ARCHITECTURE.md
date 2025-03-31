@@ -1,6 +1,6 @@
 # Architecture du projet Neural Battler
 
-*Document généré automatiquement le 31/03/2025 à 16:02:21*
+*Document généré automatiquement le 31/03/2025 à 18:44:23*
 
 ## Structure des fichiers
 
@@ -11,6 +11,7 @@
 ├── __init__.py
 ├── requirements.txt
 ├── run.py
+├── train.sh
 ├── train_all.py
 ├── assets/
     ├── audio/
@@ -40,7 +41,8 @@
         ├── immune_cell_model_run_20250331_153029_ep70.pt
         ├── immune_cell_model_run_20250331_153029_ep80.pt
         ├── immune_cell_model_run_20250331_153029_ep90.pt
-        └── immune_cell_model_run_20250331_153029_final.pt
+        ├── immune_cell_model_run_20250331_153029_final.pt
+        └── immune_cell_model_run_20250331_180844_ep1700.pt
     ├── stats/
         ├── training_performance.png
         ├── training_performance_run_20250330_185106.png

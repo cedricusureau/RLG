@@ -12,7 +12,7 @@ print(f"Répertoire courant: {os.getcwd()}")
 print(f"Répertoire du script: {root_dir}")
 
 # Construire le chemin absolu vers le modèle
-model_path = os.path.join(root_dir, "data", "neural_networks", "immune_cell_model_run_20250331_153029_ep180.pt")
+model_path = os.path.join(root_dir, "data", "neural_networks", "immune_cell_model_run_20250331_180844_ep1700.pt")
 print(f"Chemin du modèle à utiliser: {model_path}")
 print(f"Le modèle existe: {os.path.exists(model_path)}")
 

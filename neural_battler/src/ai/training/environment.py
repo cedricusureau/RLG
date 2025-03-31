@@ -43,6 +43,9 @@ class TrainingEnvironment:
         for _ in range(5):
             self._spawn_random_pathogen()
 
+        self.prev_dist_to_closest = None
+        self.prev_special_ready = True if hasattr(self.immune_cell, 'special_ready') else False
+
         return self._get_state()
 
     def _get_state(self):
@@ -153,21 +156,89 @@ class TrainingEnvironment:
     def _calculate_reward(self, prev_health, prev_num_pathogens, dx, dy):
         reward = 0.0
 
-        # Récompense principale: pénalité pour perte de vie
+        # 1. Récompenses/pénalités principales
+        # Perte de vie (pénalité forte)
         health_change = self.immune_cell.health - prev_health
         if health_change < 0:
-            return -1.0  # Forte pénalité fixe pour toute perte de vie
+            reward -= 0.5  # Pénalité fixe pour toute perte de vie
 
-        # Bonus pour l'élimination de pathogènes
+        # Élimination de pathogènes (récompense forte)
         pathogen_change = prev_num_pathogens - len(self.tissue.pathogens)
         if pathogen_change > 0:
-            return 1.0  # Bonus fixe pour avoir éliminé un pathogène
+            reward += 1.0 * pathogen_change
 
-        # Petite récompense pour le mouvement
+        # 2. Récompenses/pénalités directionnelles
+        # Mouvement (récompense faible)
         if abs(dx) > 0.1 or abs(dy) > 0.1:
-            return 0.1
+            # Base reward for movement
+            reward += 0.05
 
-        return 0.0  # Récompense neutre par défaut
+            # Pénalité si se dirige vers un mur quand près d'un mur
+            wall_margin = 50
+            near_wall = (self.immune_cell.x < wall_margin or
+                         self.immune_cell.x > self.width - wall_margin or
+                         self.immune_cell.y < wall_margin or
+                         self.immune_cell.y > self.height - wall_margin)
+
+            if near_wall:
+                # Vérifier si on se déplace vers le mur
+                moving_to_wall = False
+                if self.immune_cell.x < wall_margin and dx < 0:  # Près du mur gauche et se déplace à gauche
+                    moving_to_wall = True
+                elif self.immune_cell.x > self.width - wall_margin and dx > 0:  # Près du mur droit et se déplace à droite
+                    moving_to_wall = True
+                elif self.immune_cell.y < wall_margin and dy < 0:  # Près du mur supérieur et se déplace vers le haut
+                    moving_to_wall = True
+                elif self.immune_cell.y > self.height - wall_margin and dy > 0:  # Près du mur inférieur et se déplace vers le bas
+                    moving_to_wall = True
+
+                if moving_to_wall:
+                    reward -= 0.1  # Pénalité pour se diriger vers un mur
+                else:
+                    reward += 0.1  # Bonus pour s'éloigner d'un mur
+        else:
+            # Pénalité pour immobilité
+            reward -= 0.05
+
+        # 3. Récompenses basées sur la proximité des pathogènes
+        if self.tissue.pathogens:
+            # Trouver le pathogène le plus proche
+            closest_dist = float('inf')
+            for pathogen in self.tissue.pathogens:
+                dist = ((pathogen.x - self.immune_cell.x) ** 2 + (pathogen.y - self.immune_cell.y) ** 2) ** 0.5
+                if dist < closest_dist:
+                    closest_dist = dist
+
+            # Si un pathogène est dangeureusement proche
+            danger_zone = 30
+            if closest_dist < danger_zone:
+                # Vérifier si le mouvement nous éloigne du pathogène le plus proche
+                if prev_dist_to_closest is not None and closest_dist > prev_dist_to_closest:
+                    reward += 0.2  # Bonus pour esquiver
+
+            # Maintenir une distance optimale pour tirer (ni trop près, ni trop loin)
+            optimal_range = 100  # Distance idéale pour tirer
+            if abs(closest_dist - optimal_range) < 20:
+                reward += 0.1  # Bonus pour maintenir la distance optimale
+
+            # Sauvegarder la distance pour la prochaine itération
+            self.prev_dist_to_closest = closest_dist
+
+        # 4. Récompense pour l'utilisation stratégique de la capacité spéciale
+        if hasattr(self.immune_cell, 'special_ready'):
+            # Si la capacité était prête mais ne l'est plus maintenant (a été utilisée)
+            if getattr(self, 'prev_special_ready', True) and not self.immune_cell.special_ready:
+                # Vérifier si des pathogènes sont à proximité pour que l'utilisation soit pertinente
+                nearby_pathogens = len(self.tissue.get_nearby_pathogens(self.immune_cell.x, self.immune_cell.y, 100))
+                if nearby_pathogens >= 2:
+                    reward += 0.5  # Bonus important si utilisé contre plusieurs pathogènes
+                else:
+                    reward += 0.1  # Petit bonus dans tous les cas
+
+            # Mémoriser l'état de la capacité
+            self.prev_special_ready = self.immune_cell.special_ready
+
+        return reward
 
     def _is_moving_away_from_walls(self, dx, dy):
         """Vérifie si le mouvement éloigne la cellule des murs"""
